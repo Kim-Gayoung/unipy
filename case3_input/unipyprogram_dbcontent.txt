@@ -1,0 +1,29 @@
+class MyMobile(Mobile):
+	_url = "http://168.131.152.196/common.php"
+	
+	def doorlist():
+		doorJson = MyCloud.selectDoorlist(_url)
+		
+		# getting the information from doorJson
+		# ...
+	
+	def deleteDoorInfo(deleteInfo):
+		isCommit = MyCloud.deleteDoorlist(_url, deleteInfo)
+		
+class MyCloud(Cloud):
+	_import_list = 'pymysql'
+	
+	def selectDoorlist():
+		# Insert connection Database
+		sql = "select * from doorlist order by d_time"
+		
+		# ...
+		# something work here
+		
+	def deleteDoorlist(deleteInfo):
+		# insert connection database
+		
+		sql = "delete from doorlist where d_time = '" + deleteInfo + "'"
+		
+		# ...
+		# something work here

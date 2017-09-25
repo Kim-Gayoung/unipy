@@ -1,0 +1,43 @@
+class MyMobile(Mobile):
+	def sendControllMessage(data):
+		MyRaspberry.sendMessage(data)
+	
+class MyRaspberry(Raspberry):
+	def sendMessage(data):
+		MyArduino.servoControl(data)
+	
+class MyArduino(Arduino):
+	_include = 'Servo.h'
+	_sensor_decl = _Servo_servo
+  
+	_int_outerPin = 10
+	_int_pos = 110
+	_int_receivedAscii = 0
+  
+	def _void_setup():
+		Serial.begin(9600)
+		outerServo.attach(outerpin)
+  
+	def _void_loop():
+		servoControl(data)
+	
+	def _void_servoControl(data):
+		if receivedAscii == 114: # turn right
+			pos = pos - 10
+			receivedAscii = 0
+		
+			if pos < 0:
+				pos = 0
+				
+		elif receivedAscii == 108: # turn left
+			pos = pos + 10
+			receivedAscii = 0
+			
+			if pos > 180:
+				pos = 180
+		
+		else:
+			pass
+			
+		outerServo.write(pos)
+				
