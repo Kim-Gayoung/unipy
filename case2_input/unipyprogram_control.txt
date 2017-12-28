@@ -1,7 +1,27 @@
 class MyMobile(Mobile):
-	def sendControllMessage(data):
+	def sendControlMessage(data):
 		MyRaspberry.sendMessage(data)
-	
+		
+	def main():
+		while True:
+			print ("=====[1] Take Photo, [2] Start/Stop Streaming, [3] Turn Left(Camera), [4] Turn Right(Camera)=====")
+			select = input("Select Command : ")
+			
+			if select == '1':
+				# take photo(custom) & save photo in cloud
+				pass
+			elif select == '2':
+				# streaming
+				pass
+			elif select == '3':
+				# turn left
+				sendControlMessage('l')
+			elif select == '4':
+				# turn right
+				sendControlMessage('r')
+			else:
+				break
+
 class MyRaspberry(Raspberry):
 	def sendMessage(data):
 		MyArduino.servoControl(data)
@@ -40,4 +60,5 @@ class MyArduino(Arduino):
 			pass
 			
 		outerServo.write(pos)
-				
+
+			

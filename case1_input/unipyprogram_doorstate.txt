@@ -1,40 +1,75 @@
-class MyArduino(Arduino):   
- _int_doorPin = 2
- _int_preState = LOW
- _int_postState = LOW
-    
- def _void_setup():
-   pinMode(doorPin, INPUT)
+class MyArduino(Arduino):
+	_int_doorPin = 2
+	_int_preState = LOW
+	_int_postState = LOW
 
- def _void_loop():
-   readDoorSensor()
-              
- def _void_readDoorSensor():
-   postState = digitalRead(doorPin)
+	def _void_setup():
+		pinMode(doorPin, INPUT)
 
-   if postState == HIGH and preState == LOW:
-      MyRaspberry.reqSend("0")
-      preState = postState
-        
-   if postState == LOW and preState == HIGH:
-      MyRaspberry.reqSend("1")
-      preState = postState
+	def _void_loop():
+		readDoorSensor()
+
+	def _void_readDoorSensor():
+		postState = digitalRead(doorPin)
+
+		if postState == HIGH and preState == LOW:
+			MyRaspberry.reqSend("0")
+			preState = postState
+
+		if postState == LOW and preState == HIGH:
+			MyRaspberry.reqSend("1")
+			preState = postState
 
 class MyRaspberry(Raspberry):
- _url = "http://168.131.152.196/common.php"
- def reqSend(val):
-   if val == 48:  # ''0''
-      pic_bin = takeAPhoto()
-      MyCloud.recordDoorState(_url , 'c', pic_bin)
-   if val == 49:  # ''1''
-      pic_bin = takAPhoto()
-      MyCloud.recordDoorState(_url, 'o', pic_bin)
+	_import_list = ['urllib.request']
+	_url = "http://168.131.152.196/common.php"
 
-class MyCloud(Cloud):         
- def recordDoorState(openclose, pic_bin):        
-    d_pic_loc = save_picture(pic_bin)
+	def reqSend(val):
+		if val == 48:	# '0'
+			pic_bin = takeAPhoto()
+			MyCloud.recordDoorState(_url, 'c', pic_bin)
+		if val == 49:	# '1'
+			pic_bin = takeAPhoto()
+			MyCloud.recordDoorState(_url, 'o', pic_bin)
 
-    # insert into
-    #    doorStateTable(d_openclose, d_pic_loc) 
-    #    values (openclose, d_pic_loc)
-    # ...
+	def takeAPhoto():
+		# 가상으로 찍은 jpeg를 가져옴
+		# file read나 command를 실행하는 action을 Raspberry에 구현
+		# r = urllib.request.urlopen("http://168.131.151.110:8080/stream/snapshot.jpeg")
+		# command에서 wget을 통해 image를 받아오는 방식
+		# mjpeg에서 사용하고 있는 stream/snapshot.jpeg 파일을 읽는 방식
+		pic_bin = r.read()
+
+		return pic_bin
+
+class MyCloud(Cloud):
+	_import_list = ['os', 'pymysql']
+
+	def recordDoorState(openclose, pic_bin):
+		d_pic_loc = save_picture(pic_bin)
+
+		isSuccess = save_doorState(openclose, d_pic_loc)
+
+	def save_picture(pic_bin):
+		num = 1
+		pic_loc = "D:\APM\Apache24\htdocs\sechome\door\door" + str(num) + ".jpg"
+
+		while os.path.isfile(pic_loc):
+			num = num + 1
+			pic_loc = "D:\APM\Apache24\htdocs\sechome\door\door" + str(num) + ".jpg"
+
+		return pic_loc
+
+	def save_doorState(openclose, d_pic_loc):
+		conn = pymysql.connect(host='localhost', user='capstone', password='capstone17', db='capstone', charset='utf8')
+
+		try:
+			with conn.cursor() as cursor:
+				sql = "insert into doorlist(d_openclose, d_pic_loc) values(%s, %s)"
+				cursor.execute(sql, (openclose, d_pic_loc))
+				conn.commit()
+			conn.close()
+			return True
+		except:
+			conn.close()
+			return False
