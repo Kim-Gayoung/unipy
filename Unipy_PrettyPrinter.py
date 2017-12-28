@@ -313,11 +313,28 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
         return self.s_code
             
        
-directory = input("Insert work directory(Absolutely Path) : ")
-filename = input("Insert file name(include extension name) : ")
-filePath = directory + "\\" + filename
+print ("1:case1(doorstate), 2:case2(control), the other number : the other arduino file")
+selection = input("Enter the number : ")
 
-f = open(filePath, 'r+')
+firstCase = "case1_input/output/MyArduino.py"
+firstOutput = "case1_input/output/MyArduino.ino"
+secondCase = "case2_input/output/MyArduino.py"
+secondOutput = "case2_input/output/MyArduino.ino"
+
+fileName = ""
+outputFile = ""
+
+if selection == '1':
+    fileName = firstCase
+    outputFile = firstOutput
+elif selection == '2':
+    fileName = secondCase
+    outputFile = secondOutput
+else:
+    fileName = input("Enter the Arduino input file name(Absolutely Path) : ")
+    outputFile = input("Enter the Arduino output file name(Absolutely Path) : ")
+
+f = open(fileName, 'r+')
 content = f.read()
 f.close()
 
@@ -327,6 +344,6 @@ t = ast.parse(content)
 pretty.visit(t)
 prettyCode = pretty.getStrCode()
 
-f = open(directory + "\\" + "Arduino.ino", "w+")
+f = open(outputFile, "w+")
 f.write(prettyCode)
 f.close()

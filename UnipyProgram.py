@@ -56,7 +56,8 @@ class replaceAST(ast.NodeTransformer):
             n = ""
             if node.name.__contains__('_'):
                 name = node.name.split('_')
-                name.remove('')
+                if name.__contains__(''):
+                    name.remove('')
                 for s in name[1:]:
                     n += s
             else:
@@ -85,6 +86,7 @@ class replaceAST(ast.NodeTransformer):
                         
     def visit_ClassDef(self, node):
         self.className = node.name
+        self.dispatch_flag = False
         newFunction = self.getDispatch()
         newNode = self.generic_visit(node)
         
@@ -105,6 +107,12 @@ class replaceAST(ast.NodeTransformer):
 
         replaceAST.importList = []
         newNode = ast.ClassDef(bases = node.bases, body = newNode, decorator_list = node.decorator_list, name = node.name)
+               
+        if self.dispatch_flag == True:
+            dispatchValue = ast.Call(args = [], func = ast.Name(id='dispatch', ctx=ast.Load()), keywords = [])
+            dispatchCall = ast.Assign(targets = [ast.Name(id='_firstCall', ctx = ast.Store())], value = dispatchValue)
+            newNode.body.body.append(dispatchCall)
+        
         return newNode        
     
     def visit_While(self, node):
@@ -190,14 +198,13 @@ class replaceAST(ast.NodeTransformer):
                     if tup[0] == self.className and tup[1] == elem[0]:
                         funNum = tup[2]
                         break
-                newIf.test = ast.Compare(left = ast.Name(id = "funid"), ops = [ast.Eq()], comparators = [ast.Str(s = str(funNum))])
+                newIf.test = ast.Compare(left = ast.Name(id = "funid"), ops = [ast.Eq()], comparators = [ast.Num(n = funNum)])
                 newIf.body = ast.Expr(value = ast.Call(args = [], func = ast.Name(id=elem[0], ctx=ast.Load()), keywords = []))
                 newIf.orelse = []
                 newFunction.body.append(newIf)
-                break
-        else:
-            return []
         
+        if newFunction.body == []:
+            return []
         
         commNode = self.getCommuNode(callee, caller)
         n = 0
@@ -206,9 +213,14 @@ class replaceAST(ast.NodeTransformer):
             newFunction.body.insert(n, comm)
             n = n + 1
         
+        if classArr.get(self.className) == 'Arduino':
+            newFunction.name = '_void_dispatch'
+        else:
+            newFunction.name = 'dispatch'
+            
         newFunction.args =[]
-        newFunction.name = "dispatch"
         newFunction.decorator_list = []
+        self.dispatch_flag = True
         
         return newFunction
     
@@ -249,7 +261,7 @@ class replaceAST(ast.NodeTransformer):
     
         elif comm == 'http':                
             if calleeClass == 'Cloud':
-                newCommu.append(ast.parse('funid = cgi.FieldStorage()["_funid"].value'))
+                newCommu.append(ast.parse('funid = int(sys.argv[1])'))
                 
                 return newCommu
                 
@@ -263,7 +275,7 @@ class replaceAST(ast.NodeTransformer):
         
         return newCommu
     
-class CommLib():
+class CommLib():    
     def commSendLib(fromClz, toClz, targets, meth, node):
         try:
             locToClz = classArr[toClz]
@@ -470,9 +482,11 @@ class CommLib():
         num = 0
         ipAddress = ""
         datas = {}
+        # fields에 
         
         smethval = CommLib.unparseExpr(methval)
-        datas['_funid'] = smethval
+        newAsts.append(ast.parse("_field_dict = {}"))
+        newAsts.append(ast.parse('_field_dict["_funid"] = ' + smethval))
         
         if 'urllib3' not in replaceAST.importList:
             replaceAST.importList.append('urllib3')
@@ -482,15 +496,18 @@ class CommLib():
             if arg == node.value.args[0]:
                 ipAddress = sarg
             else:
-                datas['MOBILE_CLOUD_ARGS_' + str(num)] = sarg
+                newAsts.append(ast.parse('_field_dict["MOBILE_CLOUD_ARGS_' + str(num) + '"] = ' + sarg))
                 num += 1
             
         newAsts.append(ast.parse("req = urllib3.PoolManager()"))
         
         for target in targets:
             starget = CommLib.unparseExpr(target)
-            targetAst = ast.parse(starget + ' = req.request("POST", ' + ipAddress + ', fields = ' + str(datas) + ')')
-            newAsts.append(targetAst)        
+            targetAst = ast.parse('_' + starget + ' = req.request("POST", ' + ipAddress + ', fields = _field_dict).data.decode("utf-8")')
+            newAsts.append(targetAst)
+            # replcae ' -> "
+            jsonAst = ast.parse(starget + ' = json.loads(_' + starget + ')')
+            newAsts.append(jsonAst)
         
         return newAsts
     
@@ -534,15 +551,15 @@ class CommLib():
     
     def recieveByHttpAtCloud(node):
         newAsts = []
-        num = 0
+        num = 2
         
-        if 'cgi' not in replaceAST.importList:
-            replaceAST.importList.append('cgi')
+        if 'sys' not in replaceAST.importList:
+            replaceAST.importList.append('sys')
                 
         if node.args.args != []:
             for arg in node.args.args:
                 sarg = CommLib.unparseExpr(arg)
-                newAsts.append(ast.parse(sarg + ' = cgi.FieldStorage()["MOBILE_CLOUD_ARGS_' + str(num) + '"].value'))
+                newAsts.append(ast.parse(sarg + ' = sys.argv[' + str(num) + ']'))
                 num = num + 1
                 
         return newAsts
@@ -593,7 +610,8 @@ class TableGenVisitor(ast.NodeVisitor):
             name = node.name
             if name.__contains__('_'):
                 name = node.name.split('_')
-                name.remove('')
+                if name.__contains__(''):
+                    name.remove('')
                 sname = ""
                 for n in name[1:]:
                     sname += n                

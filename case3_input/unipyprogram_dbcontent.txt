@@ -1,29 +1,101 @@
 class MyMobile(Mobile):
+	_import_list = ['json']
 	_url = "http://168.131.152.196/common.php"
+	doorJson = []
 	
-	def doorlist():
+	def showDoorlist():
+		global doorJson
 		doorJson = MyCloud.selectDoorlist(_url)
 		
-		# getting the information from doorJson
-		# ...
+		print (doorJson)
+			
+		for door in doorJson:
+			print (door)
 	
-	def deleteDoorInfo(deleteInfo):
-		isCommit = MyCloud.deleteDoorlist(_url, deleteInfo)
+	def deleteDoorInfo():
+		num = 0
 		
+		for door in doorJson:
+			print (str(num) + " : " + str(door))
+			num += 1
+			
+		selectDel = input("select number : ")
+		deleteInfo = doorJson[int(selectDel)].get('d_time')
+		
+		isSuccess = MyCloud.deleteDoorlist(_url, deleteInfo)
+		
+		if isSuccess["result"] == True:
+			print ("Successfully Deleted")
+		else:
+			print ("Failed to Delete")
+		
+	def main():
+		while True:
+			print ("=====[1] Show doorlist, [2] Delete doorlist=====")		
+			select = input("Select Command : ")
+			
+			if select == '1':
+				showDoorlist()
+			elif select == '2':
+				deleteDoorInfo()
+			else:
+				break
+				
 class MyCloud(Cloud):
-	_import_list = 'pymysql'
+	_import_list = ['pymysql', 'os', 'json']
 	
 	def selectDoorlist():
-		# Insert connection Database
-		sql = "select * from doorlist order by d_time"
+		conn = pymysql.connect(host='localhost', user='capstone', password='capstone17', db='capstone', charset='utf8')
+		result = []
 		
-		# ...
-		# something work here
+		try:
+			with conn.cursor() as cursor:
+				sql = "select d_time, d_openclose from doorlist order by d_time"
+				cursor.execute(sql)
+				
+				rows = cursor.fetchall()
+				columns = [desc[0] for desc in cursor.description]
+				tmp = []
+				
+				for row in rows:
+					if type(row[0]).__name__ == 'datetime':
+						tmp.append([str(row[0]), row[1]])
+						
+				rows = tmp
+				del(tmp)
+				
+				for row in rows:
+					row = dict(zip(columns, row))
+					result.append(row)
+		
+			conn.close()
+			print (json.dumps(result))
+		except:
+			conn.close()
+			print ()
 		
 	def deleteDoorlist(deleteInfo):
-		# insert connection database
+		conn = pymysql.connect(host='localhost', user='capstone', password='capstone17', db='capstone', charset='utf8')
 		
-		sql = "delete from doorlist where d_time = '" + deleteInfo + "'"
-		
-		# ...
-		# something work here
+		try:
+			with conn.cursor() as cursor:
+				sql = "select d_pic_loc from doorlist where d_time = %s"
+				cursor.execute(sql, deleteInfo)
+				row = cursor.fetchone()
+				pic_loc = "D:\APM\Apache24\htdocs\sechome\door\\" + row[0]
+			
+			with open(pic_loc, 'r') as f:
+				f.close()
+				os.unlink(pic_loc)
+				
+			with conn.cursor() as cursor:
+				sql = "delete from doorlist where d_time = %s"
+				cursor.execute(sql, deleteInfo)
+				conn.commit()
+				
+			conn.close()
+			print (json.dumps({'result': True}))
+		except:
+			conn.close()
+			print (json.dumps({'result': False}))
+			
