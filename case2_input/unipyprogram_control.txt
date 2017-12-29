@@ -39,27 +39,26 @@ class MyArduino(Arduino):
   
 	_int_outerPin = 10
 	_int_pos = 110
-	_int_receivedAscii = 0
 	_char_data = ''
   
 	def _void_setup():
 		Serial.begin(9600)
 		outerServo.attach(outerPin)
   
-	def _void_loop():
-		servoControl(data)
+#	def _void_loop():
+#		servoControl(data)
 	
 	def _void_servoControl(data):
-		if receivedAscii == 114: # turn right
+		if data == 114: # turn right
 			pos = pos - 10
-			receivedAscii = 0
+			data = 0
 		
 			if pos < 0:
 				pos = 0
 				
-		elif receivedAscii == 108: # turn left
+		elif data == 108: # turn left
 			pos = pos + 10
-			receivedAscii = 0
+			data = 0
 			
 			if pos > 180:
 				pos = 180

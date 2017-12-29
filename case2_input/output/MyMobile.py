@@ -7,6 +7,7 @@ def sendControlMessage(data):
     _writer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     _writer_tup = (HOST, PORT)
     _writer.connect(_writer_tup)
+    _writer.send(str(2).encode('utf-8'))
     _writer.sendall(data.encode('utf-8'))
 
 def main():

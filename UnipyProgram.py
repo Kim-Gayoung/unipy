@@ -246,11 +246,12 @@ class replaceAST(ast.NodeTransformer):
                 
         elif comm == 'Socket':
             if calleeClass == 'Raspberry':
+                newCommu.append(ast.parse('global _conn'))
                 newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
                 newCommu.append(ast.parse('s.bind((HOST, PORT))'))
                 newCommu.append(ast.parse('s.listen(10)'))
                 
-                source = 'while 1:\n' + '\tconn, addr = s.accept()\n' + '\tfunid = conn.recv(1024).decode("utf-8")\n' + '\tif funid != None:\n' + '\t\tbreak'
+                source = 'while 1:\n' + '\t_conn, addr = s.accept()\n' + '\tfunid = _conn.recv(1024).decode("utf-8")\n' + '\tif funid != None:\n' + '\t\tbreak'
                 newCommu.append(ast.parse(source))
                 
                 return newCommu
@@ -458,7 +459,7 @@ class CommLib():
         
         for arg in node.args.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse(sarg + ' = conn.recv(1024)'))
+            newAsts.append(ast.parse(sarg + ' = _conn.recv(1024)'))
         
         return newAsts
         
