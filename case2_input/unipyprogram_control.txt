@@ -1,6 +1,9 @@
 class MyMobile(Mobile):
+	HOST = '168.131.151.110'
+	PORT = 8888
+	
 	def sendControlMessage(data):
-		MyRaspberry.sendMessage(data)
+		MyRaspberry.sendMessage((HOST, PORT), data)
 		
 	def main():
 		while True:
@@ -23,20 +26,25 @@ class MyMobile(Mobile):
 				break
 
 class MyRaspberry(Raspberry):
+	
+	HOST = ''
+	PORT = 8888
+	
 	def sendMessage(data):
 		MyArduino.servoControl(data)
 	
 class MyArduino(Arduino):
 	_include = 'Servo.h'
-	_sensor_decl = _Servo_servo
+	_sensor_decl = _Servo_outerServo
   
 	_int_outerPin = 10
 	_int_pos = 110
 	_int_receivedAscii = 0
+	_char_data = ''
   
 	def _void_setup():
 		Serial.begin(9600)
-		outerServo.attach(outerpin)
+		outerServo.attach(outerPin)
   
 	def _void_loop():
 		servoControl(data)

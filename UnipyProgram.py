@@ -247,8 +247,11 @@ class replaceAST(ast.NodeTransformer):
         elif comm == 'Socket':
             if calleeClass == 'Raspberry':
                 newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
-                newCommu.append(ast.parse('conn, addr = s.accept()'))
-                newCommu.append(ast.parse('funid = conn.recv(1024)'))
+                newCommu.append(ast.parse('s.bind((HOST, PORT))'))
+                newCommu.append(ast.parse('s.listen(10)'))
+                
+                source = 'while 1:\n' + '\tconn, addr = s.accept()\n' + '\tfunid = conn.recv(1024).decode("utf-8")\n' + '\tif funid != None:\n' + '\t\tbreak'
+                newCommu.append(ast.parse(source))
                 
                 return newCommu
             
@@ -466,9 +469,15 @@ class CommLib():
         if 'socket' not in replaceAST.importList:
             replaceAST.importList.append('socket')
         
+        newAsts.append(ast.parse('_writer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
+        
         for arg in node.value.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse('writer.sendall(' + sarg + ')'))
+            if arg == node.value.args[0]:
+                newAsts.append(ast.parse('_writer_tup = ' + sarg))
+                newAsts.append(ast.parse('_writer.connect(_writer_tup)'))
+            else:
+                newAsts.append(ast.parse('_writer.sendall(' + sarg + '.encode("utf-8"))'))
         
         return newAsts
     

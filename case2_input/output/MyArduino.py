@@ -1,20 +1,21 @@
 
 _include = 'Servo.h'
-_sensor_decl = _Servo_servo
+_sensor_decl = _Servo_outerServo
 _int_outerPin = 10
 _int_pos = 110
 _int_receivedAscii = 0
+_char_data = ''
 
-def dispatch():
+def _void_dispatch():
     _char_funid = ''
     if (Serial.available() > 0):
         funid = Serial.read()
-    if (funid == '4'):
+    if (funid == 5):
         servoControl()
 
 def _void_setup():
     Serial.begin(9600)
-    outerServo.attach(outerpin)
+    outerServo.attach(outerPin)
 
 def _void_loop():
     servoControl(data)
@@ -34,3 +35,4 @@ def _void_servoControl():
     else:
         pass
     outerServo.write(pos)
+_firstCall = dispatch()
