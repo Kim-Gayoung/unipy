@@ -470,12 +470,14 @@ class CommLib():
             replaceAST.importList.append('socket')
         
         newAsts.append(ast.parse('_writer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
+        smethval = CommLib.unparseExpr(methval)
         
         for arg in node.value.args:
             sarg = CommLib.unparseExpr(arg)
             if arg == node.value.args[0]:
                 newAsts.append(ast.parse('_writer_tup = ' + sarg))
                 newAsts.append(ast.parse('_writer.connect(_writer_tup)'))
+                newAsts.append(ast.parse('_writer.send(str(' + smethval + ').encode("utf-8"))'))
             else:
                 newAsts.append(ast.parse('_writer.sendall(' + sarg + '.encode("utf-8"))'))
         
