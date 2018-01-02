@@ -50,7 +50,7 @@ class replaceAST(ast.NodeTransformer):
     def __init__(self):
         self.className = ""
 
-    def visit_FunctionDef(self, node):        
+    def visit_FunctionDef(self, node):
         for callee in calleeArr:
             name = ""
             n = ""
@@ -95,10 +95,27 @@ class replaceAST(ast.NodeTransformer):
         newNode.body = newBody
         num = 0
         
+        if classArr.get(self.className) == 'Arduino':
+            loopFunction = self.getLoop()
+            
+            for stmt in newNode.body:
+                if type(stmt).__name__ == 'FunctionDef' and stmt.name == '_void_setup':
+                    newNode.body.insert(num + 1, loopFunction)
+                else:
+                    num = num + 1
+        
+        num = 0
+        
         for stmt in newNode.body:
             if type(stmt).__name__ == 'FunctionDef':
-                newNode.body.insert(num, newFunction)
-                break
+                if classArr.get(self.className) == 'Arduino':
+                    num = num + 1
+                    if stmt.name == '_void_loop':
+                        newNode.body.insert(num, newFunction)
+                        break
+                else:
+                    newNode.body.insert(num, newFunction)
+                    break
             else:
                 num = num + 1
         
@@ -108,7 +125,7 @@ class replaceAST(ast.NodeTransformer):
         replaceAST.importList = []
         newNode = ast.ClassDef(bases = node.bases, body = newNode, decorator_list = node.decorator_list, name = node.name)
                
-        if self.dispatch_flag == True:
+        if self.dispatch_flag == True and classArr.get(self.className) != 'Arduino':
             dispatchValue = ast.Call(args = [], func = ast.Name(id='dispatch', ctx=ast.Load()), keywords = [])
             dispatchCall = ast.Assign(targets = [ast.Name(id='_firstCall', ctx = ast.Store())], value = dispatchValue)
             newNode.body.body.append(dispatchCall)
@@ -117,7 +134,6 @@ class replaceAST(ast.NodeTransformer):
     
     def visit_While(self, node):
         newNode = self.generic_visit(node)
-        
         newBody = self.visit_body(newNode.body)
         newNode.body = newBody
         
@@ -181,6 +197,33 @@ class replaceAST(ast.NodeTransformer):
                 newBody.append(stmt)
 
         return newBody
+    
+    def getLoop(self):
+        loopFunction = ast.FunctionDef()
+        loopFunction.body = []
+        isExist = False
+        
+        if classArr.get(self.className) == 'Arduino':
+            for tup in remoteProcList:
+                if tup[0] == self.className and tup[1] != 'setup':
+                    for callTup in calleeArr:
+                        if callTup[1] == self.className and callTup[0] != tup[1]:
+                            loopFunction.body.append(ast.Call(args = [], func = ast.Name(id=tup[1], ctx=ast.Load()), keywords = []))
+                        elif callTup[1] == self.className and callTup[0] == tup[1]:
+                            isExist = True
+                    
+            if isExist == True:
+                loopFunction.body.append(ast.Expr(value = ast.Call(args=[], func = ast.Name(id='dispatch', ctx=ast.Load()), keywords=[])))
+            
+        if loopFunction.body == []:
+            return []
+        
+        loopFunction.args = []
+        loopFunction.decorator_list = []
+        loopFunction.name = '_void_loop'
+        
+        return loopFunction
+            
     
     def getDispatch(self):
         newFunction = ast.FunctionDef()
@@ -493,8 +536,6 @@ class CommLib():
         newAsts = []
         num = 0
         ipAddress = ""
-        datas = {}
-        # fields에 
         
         smethval = CommLib.unparseExpr(methval)
         newAsts.append(ast.parse("_field_dict = {}"))
@@ -517,7 +558,6 @@ class CommLib():
             starget = CommLib.unparseExpr(target)
             targetAst = ast.parse('_' + starget + ' = req.request("POST", ' + ipAddress + ', fields = _field_dict).data.decode("utf-8")')
             newAsts.append(targetAst)
-            # replcae ' -> "
             jsonAst = ast.parse(starget + ' = json.loads(_' + starget + ')')
             newAsts.append(jsonAst)
         

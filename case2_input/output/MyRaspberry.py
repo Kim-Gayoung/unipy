@@ -20,6 +20,6 @@ def dispatch():
 def sendMessage():
     data = _conn.recv(1024)
     ser = serial.Serial('/dev/ttyACM0')
-    ser.write(5)
+    ser.write(4)
     ser.write(data)
 _firstCall = dispatch()

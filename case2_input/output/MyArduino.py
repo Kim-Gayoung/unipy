@@ -5,19 +5,19 @@ _int_outerPin = 10
 _int_pos = 110
 _char_data = ''
 
-def _void_dispatch():
-    _char_funid = ''
-    if (Serial.available() > 0):
-        funid = Serial.read()
-    if (funid == 5):
-        servoControl()
-
 def _void_setup():
     Serial.begin(9600)
     outerServo.attach(outerPin)
 
 def _void_loop():
-    servoControl(data)
+    dispatch()
+
+def _void_dispatch():
+    _char_funid = ''
+    if (Serial.available() > 0):
+        funid = Serial.read()
+    if (funid == 4):
+        servoControl()
 
 def _void_servoControl():
     data = Serial.read()
@@ -34,4 +34,3 @@ def _void_servoControl():
     else:
         pass
     outerServo.write(pos)
-_firstCall = dispatch()
