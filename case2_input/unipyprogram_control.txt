@@ -39,24 +39,20 @@ class MyArduino(Arduino):
   
 	_int_outerPin = 10
 	_int_pos = 110
-	_char_data = ''
   
 	def _void_setup():
 		Serial.begin(9600)
 		outerServo.attach(outerPin)
-  
-#	def _void_loop():
-#		servoControl(data)
 	
-	def _void_servoControl(data):
-		if data == 114: # turn right
+	def _void_servoControl(_char_data):
+		if data == 'r': # turn right
 			pos = pos - 10
 			data = 0
 		
 			if pos < 0:
 				pos = 0
 				
-		elif data == 108: # turn left
+		elif data == 'l': # turn left
 			pos = pos + 10
 			data = 0
 			
