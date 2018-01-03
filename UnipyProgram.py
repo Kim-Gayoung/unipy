@@ -277,7 +277,10 @@ class replaceAST(ast.NodeTransformer):
         if comm == 'Serial':
             if calleeClass == 'Arduino':
                 newCommu.append(ast.parse('_int_funid = -1'))
-                newCommu.append(ast.If(test = ast.parse('Serial.available() > 0').body[0].value, body = ast.parse('funid = Serial.read()'), orelse = []))
+                newCommu.append(ast.parse('_String_str = ""'))
+                bodySource = "_char_c = Serial.read()\n" + "if c == '\\n':\n" + "\tbreak\n" + "else:\n" + "\tstr += c"
+                newCommu.append(ast.While(test = ast.parse('Serial.available() > 0').body[0].value, body = ast.parse(bodySource), orelse = []))
+                newCommu.append(ast.parse("funid = str.toInt()"))
                 
                 return newCommu
             
