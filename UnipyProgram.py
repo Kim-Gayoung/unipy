@@ -278,7 +278,7 @@ class replaceAST(ast.NodeTransformer):
             if calleeClass == 'Arduino':
                 newCommu.append(ast.parse('_int_funid = -1'))
                 newCommu.append(ast.parse('_String_str = ""'))
-                bodySource = "_char_c = Serial.read()\n" + "if c == '\\n':\n" + "\tbreak\n" + "else:\n" + "\tstr += c"
+                bodySource = "_byte_c = Serial.read()\n" + "if c == '\\n':\n" + "\tbreak\n" + "else:\n" + "\tstr += c"
                 newCommu.append(ast.While(test = ast.parse('Serial.available() > 0').body[0].value, body = ast.parse(bodySource), orelse = []))
                 newCommu.append(ast.parse("funid = str.toInt()"))
                 
@@ -472,10 +472,12 @@ class CommLib():
 
         smethval = CommLib.unparseExpr(methval)
         newAsts.append(ast.parse('ser.write(' + smethval + ')'))
+        newAsts.append(ast.parse('ser.write("\\n")'))
 
         for arg in node.value.args:
             sarg = CommLib.unparseExpr(arg)
             newAsts.append(ast.parse('ser.write(' + sarg + ')'))
+            newAsts.append(ast.parse('ser.write("\\n")'))
 
         return newAsts
     
