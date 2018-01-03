@@ -61,6 +61,21 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
         
         self.indent -= 1
         self.s_code += "    " * self.indent + "}"
+    
+    def visit_While(self, node):
+        self.s_code += "while ("
+        self.generic_visit(ast.Expr(value = node.test))
+        self.s_code += ") {\n"
+        self.indent += 1
+        
+        for stmt in node.body:
+            self.s_code += "    " * self.indent
+            self.generic_visit(ast.Expr(value = stmt))
+            self.s_code += "\n"
+            
+        self.indent -= 1
+        self.s_code += "    " * self.indent
+        self.s_code += "}"
         
     def visit_If(self, node):
         self.s_code += "if ("
@@ -74,8 +89,29 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
             self.s_code += "\n"
         
         self.indent -= 1
-        self.s_code += "    " * self.indent        
+        self.s_code += "    " * self.indent
         self.s_code += "}"
+    
+        if node.orelse != []:
+            for elseStmt in node.orelse:
+                self.s_code += "\n"
+                self.s_code += "    " * self.indent
+                self.s_code += "else "
+                if type(elseStmt).__name__ == "If":
+                    self.generic_visit(ast.Expr(value = elseStmt))
+                else:
+                    self.s_code += "{\n"
+                    self.indent += 1
+                    self.s_code += "    " * self.indent
+                    self.generic_visit(ast.Expr(value = elseStmt))
+                    self.s_code += "\n"
+                    self.indent -= 1
+                    self.s_code += "    " * self.indent
+                    self.s_code += "}\n"
+        
+    
+    def visit_Break(self, node):
+        self.s_code += "break;"
         
     def visit_Compare(self, node):
         self.generic_visit(ast.Expr(value = node.left))
@@ -110,7 +146,7 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
                 self.generic_visit(ast.Expr(comparator))
         
     def visit_Name(self, node):
-        if node.id.__contains__('_int') or node.id.__contains__('_void') or node.id.__contains__('_byte') or node.id.__contains__('_char'):
+        if node.id.__contains__('_int') or node.id.__contains__('_void') or node.id.__contains__('_byte') or node.id.__contains__('_char') or node.id.__contains__('_String'):
             sid = node.id.split('_')
             sid.remove('')
             
@@ -165,7 +201,7 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
         self.generic_visit(node)
         
     def visit_Str(self, node):
-        self.s_code += "\"" + node.s + "\""
+        self.s_code += repr(node.s)
         
         self.generic_visit(node)
         
@@ -179,7 +215,7 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
                     self.declSensor(node.value)
                     self.s_code += ";\n"
                 # ToDo : Arduino double, float, short, unsigned, ...
-                elif tid.__contains__('_int') or tid.__contains__('byte') or tid.__contains__('_char') or tid.__contains__('_boolean'):
+                elif tid.__contains__('_int') or tid.__contains__('byte') or tid.__contains__('_char') or tid.__contains__('_boolean') or tid.__contains__('_String'):
                     self.declVariable(tid)
                     self.s_code += " = "
                     self.generic_visit(ast.Expr(value = node.value))
@@ -247,9 +283,30 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
             print ("Invalid operator", sop)
             
         self.generic_visit(ast.Expr(value = node.right))
-                
+        
+    def visit_AugAssign(self, node):
+        self.generic_visit(ast.Expr(value = node.target))
+        
+        sop = node.op
+        
+        if type(sop).__name__ == "Add":
+            self.s_code += " += "
+        elif type(sop).__name__ == "Sub":
+            self.s_code += " -= "
+        elif type(sop).__name__ == "Mult":
+            self.s_code += " *= "
+        elif type(sop).__name__ == "Div":
+            self.s_code += " /= "
+        elif type(sop).__name__ == "Mod":
+            self.s_code += " %= "
+        else:
+            print ("Invalid Operator", sop)
+            
+        self.generic_visit(ast.Expr(value = node.value))
+        self.s_code += ";"
+        
     def declFunction(self, name):
-        if name.__contains__('_int') or name.__contains__('_void') or name.__contains__('_byte') or name.__contains__('_char'):
+        if name.__contains__('_int') or name.__contains__('_void') or name.__contains__('_byte') or name.__contains__('_char') or name.__contains__('_String'):
             sid = name.split('_')
             sid.remove('')
             self.s_code += sid[0] + " "
@@ -273,6 +330,10 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
         elif tid.__contains__('_boolean'):
             self.s_code += "boolean "
             split_tid = tid[8:]
+            tid = self.hasArrString(split_tid)
+        elif tid.__contains__('_String'):
+            self.s_code += "String "
+            split_tid = tid[7:]
             tid = self.hasArrString(split_tid)
             
     def declSensor(self, node):
