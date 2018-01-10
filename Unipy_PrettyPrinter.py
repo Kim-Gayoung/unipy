@@ -12,6 +12,7 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
         print (self.s_code)
         
     def visit_FunctionDef(self, node):
+        self.s_code += "\n"
         self.declFunction(node.name)
         self.s_code += "("
         self.generic_visit(node.args)
@@ -201,7 +202,7 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
         self.generic_visit(node)
         
     def visit_Str(self, node):
-        self.s_code += repr(node.s)
+        self.s_code += repr(node.s).replace("'", '"')
         
         self.generic_visit(node)
         
@@ -263,22 +264,23 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
             self.s_code += " / "
         elif type(sop).__name__ == "Mod":
             self.s_code += " % "
-        elif type(sop).__name__ == "MatMul":
-            self.s_code += " % "
-        elif type(sop).__name__ == "Pow":
-            self.s_code += " % "
-        elif type(sop).__name__ == "LShift":
-            self.s_code += " % "
-        elif type(sop).__name__ == "RShift":
-            self.s_code += " % "
-        elif type(sop).__name__ == "BitOr":
-            self.s_code += " | "
-        elif type(sop).__name__ == "BirAnd":
-            self.s_code += " & "
-        elif type(sop).__name__ == "BitXor":
-            self.s_code += " % "
-        elif type(sop).__name__ == "FloorDiv":
-            self.s_code += " / "
+        # matmul, pos, lshift, rshift etc... are not supported
+#        elif type(sop).__name__ == "MatMul":
+#            self.s_code += " % "
+#        elif type(sop).__name__ == "Pow":
+#            self.s_code += " % "
+#        elif type(sop).__name__ == "LShift":
+#            self.s_code += " % "
+#        elif type(sop).__name__ == "RShift":
+#            self.s_code += " % "
+#        elif type(sop).__name__ == "BitOr":
+#            self.s_code += " | "
+#        elif type(sop).__name__ == "BirAnd":
+#            self.s_code += " & "
+#        elif type(sop).__name__ == "BitXor":
+#            self.s_code += " % "
+#        elif type(sop).__name__ == "FloorDiv":
+#            self.s_code += " / "
         else:
             print ("Invalid operator", sop)
             
