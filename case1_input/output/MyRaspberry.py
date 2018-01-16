@@ -1,27 +1,43 @@
 
 import urllib.request
 import urllib3
+import json
 import serial
 _url = 'http://168.131.152.196/common.php'
 
 def dispatch():
-    ser = serial.Serial('/dev/ttyACM0')
-    funid = ser.read(1)
+    global _ser, _jsonData
+    _ser = serial.Serial('/dev/ttyACM0', 9600)
+    jsonStr = ser.readline().strip().decode('utf-8')
+    _jsonData = json.loads(jsonStr)
+    _funid = _jsonData['_funid']
     if (funid == 3):
         reqSend()
 
 def reqSend():
-    val = ser.read(1)
+    _recieveData = ser.readline().strip().decode('utf-8')
+    _jsonData = json.loads(_recieveData)
+    val = _jsonData['val']
+    val = ord(val)
     if (val == 48):
         pic_bin = takeAPhoto()
+        _data_dict = {}
+        _data_dict['_funid'] = 5
+        _data_dict['GATEWAY_CLOUD_ARGS_0'] = c
+        _data_dict['GATEWAY_CLOUD_ARGS_1'] = pic_bin
         req = urllib3.PoolManager()
-        req.request('POST', '_url', data={'_funid': '5', 'GATEWAY_CLOUD_ARGS_0': 'c', 'GATEWAY_CLOUD_ARGS_1': 'pic_bin'})
+        req.request('POST', _url, data=_data_dict)
     if (val == 49):
         pic_bin = takeAPhoto()
+        _data_dict = {}
+        _data_dict['_funid'] = 5
+        _data_dict['GATEWAY_CLOUD_ARGS_0'] = o
+        _data_dict['GATEWAY_CLOUD_ARGS_1'] = pic_bin
         req = urllib3.PoolManager()
-        req.request('POST', '_url', data={'_funid': '5', 'GATEWAY_CLOUD_ARGS_0': 'o', 'GATEWAY_CLOUD_ARGS_1': 'pic_bin'})
+        req.request('POST', _url, data=_data_dict)
 
 def takeAPhoto():
+    r = urllib.request.urlopen('http://168.131.151.110:8080/stream/snapshot.jpeg')
     pic_bin = r.read()
     return pic_bin
 _firstCall = dispatch()

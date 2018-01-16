@@ -114,6 +114,9 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
     def visit_Break(self, node):
         self.s_code += "break;"
         
+    def visit_Continue(self, node):
+        self.s_code += "continue;"
+        
     def visit_Compare(self, node):
         self.generic_visit(ast.Expr(value = node.left))
         
@@ -147,14 +150,16 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
                 self.generic_visit(ast.Expr(comparator))
         
     def visit_Name(self, node):
-        if node.id.__contains__('_int') or node.id.__contains__('_void') or node.id.__contains__('_byte') or node.id.__contains__('_char') or node.id.__contains__('_String'):
-            sid = node.id.split('_')
-            sid.remove('')
+        if node.id.__contains__('_'):
+            name = node.id[1:]
+            self.s_code += name[:name.find('_') if name.find('_') != -1 else len(name)]
+            self.s_code += " "
             
-            for rid in sid[1:]:
-                self.s_code += rid
+            if name.find('_') != -1:
+                self.s_code += name[name.find('_') + 1 if name.find('_') != -1 else 0:]
         else:
             self.s_code += node.id
+        
         self.generic_visit(node)
         
     def visit_NameConstant(self, node):
@@ -275,7 +280,7 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
 #            self.s_code += " % "
 #        elif type(sop).__name__ == "BitOr":
 #            self.s_code += " | "
-#        elif type(sop).__name__ == "BirAnd":
+#        elif type(sop).__name__ == "BitAnd":
 #            self.s_code += " & "
 #        elif type(sop).__name__ == "BitXor":
 #            self.s_code += " % "

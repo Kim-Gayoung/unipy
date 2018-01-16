@@ -4,6 +4,7 @@ class MyArduino(Arduino):
 	_int_postState = LOW
 
 	def _void_setup():
+		Serial.begin(9600)
 		pinMode(doorPin, INPUT)
 
 	def _void_loop():
@@ -25,6 +26,7 @@ class MyRaspberry(Raspberry):
 	_url = "http://168.131.152.196/common.php"
 
 	def reqSend(val):
+		val = ord(val)
 		if val == 48:	# '0'
 			pic_bin = takeAPhoto()
 			MyCloud.recordDoorState(_url, 'c', pic_bin)
@@ -35,7 +37,7 @@ class MyRaspberry(Raspberry):
 	def takeAPhoto():
 		# 가상으로 찍은 jpeg를 가져옴
 		# file read나 command를 실행하는 action을 Raspberry에 구현
-		# r = urllib.request.urlopen("http://168.131.151.110:8080/stream/snapshot.jpeg")
+		r = urllib.request.urlopen("http://168.131.151.110:8080/stream/snapshot.jpeg")
 		# command에서 wget을 통해 image를 받아오는 방식
 		# mjpeg에서 사용하고 있는 stream/snapshot.jpeg 파일을 읽는 방식
 		pic_bin = r.read()
