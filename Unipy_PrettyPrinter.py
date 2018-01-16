@@ -156,7 +156,7 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
             self.s_code += " "
             
             if name.find('_') != -1:
-                self.s_code += name[name.find('_') + 1 if name.find('_') != -1 else 0:]
+                self.s_code += name[name.find('_') + 1:]
         else:
             self.s_code += node.id
         
@@ -274,16 +274,16 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
 #            self.s_code += " % "
 #        elif type(sop).__name__ == "Pow":
 #            self.s_code += " % "
-#        elif type(sop).__name__ == "LShift":
-#            self.s_code += " % "
-#        elif type(sop).__name__ == "RShift":
-#            self.s_code += " % "
-#        elif type(sop).__name__ == "BitOr":
-#            self.s_code += " | "
-#        elif type(sop).__name__ == "BitAnd":
-#            self.s_code += " & "
-#        elif type(sop).__name__ == "BitXor":
-#            self.s_code += " % "
+        elif type(sop).__name__ == "LShift":
+            self.s_code += " << "
+        elif type(sop).__name__ == "RShift":
+            self.s_code += " >> "
+        elif type(sop).__name__ == "BitOr":
+            self.s_code += " | "
+        elif type(sop).__name__ == "BitAnd":
+            self.s_code += " & "
+        elif type(sop).__name__ == "BitXor":
+            self.s_code += " ^ "
 #        elif type(sop).__name__ == "FloorDiv":
 #            self.s_code += " / "
         else:

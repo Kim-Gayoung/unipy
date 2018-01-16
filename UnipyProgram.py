@@ -105,6 +105,7 @@ class replaceAST(ast.NodeTransformer):
         for stmt in newNode.body:
             if type(stmt).__name__ == 'FunctionDef' and classArr.get(self.className) == 'Arduino' and needCommu:
                 newNode.body.insert(num, ast.parse('_DynamicJsonBuffer_jsonBuffer'))
+#                newNode.body.insert(num + 1, ast.Expr(value = ast.Name(id = '_JsonObject&_jsonObject', ctx = ast.Load())))
                 needCommu = False
                 break
             else:
@@ -296,8 +297,11 @@ class replaceAST(ast.NodeTransformer):
             if calleeClass == 'Arduino':
                 newCommu.append(ast.parse('_String_str = ""'))
                 bodySource = "while Serial.available() > 0:\n" + "\tstr = Serial.readString()\n"
-                bodySource += "if str != '':\n" + "\tJsonObject& jsonObject = jsonBuffer.parseObject(str)\n"
                 newCommu.append(ast.parse(bodySource))
+                ifBodyAst = []
+                valueAst = ast.Call(args = [ast.Name(id = "str", ctx = ast.Load())], func = ast.Attribute(attr = "parseObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
+                ifBodyAst.append(ast.Assign(targets = [ast.Name(id="JsonObject&_jsonObject", ctx = ast.Load())], value = valueAst))
+                newCommu.append(ast.If(test = ast.Compare(comparators = [ast.Str(s = "")], left = ast.Name(id = "str", ctx = ast.Load()), ops = [ast.NotEq()]), body = ifBodyAst, orelse = []))
                 newCommu.append(ast.parse("funid = jsonObject['_funid']"))
                 
                 return newCommu
@@ -431,12 +435,17 @@ class CommLib():
         smethval = CommLib.unparseExpr(methval)
         newAsts = []
         
-        newAsts.append(ast.parse('jsonObject = jsonBuffer.createObject()'))
+        callAst = ast.Call(args = [], func = ast.Attribute(attr = "createObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
+        newAsts.append(ast.Assign(targets = [ast.Name(id="_JsonObject&_jsonObject", ctx = ast.Load())], value = callAst))
+#        newAsts.append(ast.parse('_JsonObject&_jsonObject = jsonBuffer.createObject()'))
         newAsts.append(ast.parse('jsonObject["_funid"] = ' + smethval))
+        
+        num = 0
         
         for arg in node.value.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse('jsonObject["' + sarg + '"] = ' + sarg))
+            newAsts.append(ast.parse('jsonObject["args' + str(num) + '"] = ' + sarg))
+            num  = num + 1
             
         newAsts.append(ast.parse('jsonObject.printTo(Serial)'))
 

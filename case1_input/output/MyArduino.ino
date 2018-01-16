@@ -1,7 +1,8 @@
+#include <ArduinoJson.h>
 int doorPin = 2;
 int preState = LOW;
 int postState = LOW;
-
+DynamicJsonBuffer jsonBuffer;
 void setup() {
     Serial.begin(9600);
     pinMode(doorPin, INPUT);
@@ -14,13 +15,17 @@ void loop() {
 void readDoorSensor() {
     postState = digitalRead(doorPin);
     if (postState == HIGH && preState == LOW) {
-        Serial.println(3);
-        Serial.println(0);
+        jsonObject = jsonBuffer.createObject();
+        jsonObject["_funid"] = 3;
+        jsonObject["0"] = 0;
+        jsonObject.printTo(Serial);
         preState = postState;
     }
     if (postState == LOW && preState == HIGH) {
-        Serial.println(3);
-        Serial.println(1);
+        jsonObject = jsonBuffer.createObject();
+        jsonObject["_funid"] = 3;
+        jsonObject["1"] = 1;
+        jsonObject.printTo(Serial);
         preState = postState;
     }
 }

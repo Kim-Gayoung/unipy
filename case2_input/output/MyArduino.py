@@ -5,7 +5,6 @@ _sensor_decl = _Servo_outerServo
 _int_outerPin = 10
 _int_pos = 110
 _DynamicJsonBuffer_jsonBuffer
-(_JsonObject & _jsonObject)
 
 def _void_setup():
     Serial.begin(9600)
@@ -19,7 +18,7 @@ def _void_dispatch():
     while (Serial.available() > 0):
         str = Serial.readString()
     if (str != ''):
-        jsonObject = jsonBuffer.parseObject(str)
+        JsonObject&_jsonObject = jsonBuffer.parseObject(str)
     funid = jsonObject['_funid']
     if (funid == 4):
         servoControl()
