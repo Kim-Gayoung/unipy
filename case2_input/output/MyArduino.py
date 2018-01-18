@@ -24,7 +24,13 @@ def _void_dispatch():
         servoControl()
 
 def _void_servoControl():
-    _String_data = jsonObject['_String_data']
+    String_recieveData = ''
+    while (Serial.available() > 0):
+        recieveData = Serial.readString()
+    if 
+    (recieveData != ''):
+        _JsonObject&_jsonObject = jsonBuffer.createObject()
+    _String_data = jsonObject['args0']
     if (data == 'r'):
         pos = (pos - 10)
         data = 0

@@ -5,10 +5,13 @@ PORT = 8888
 
 def sendControlMessage(data):
     _writer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    _sendData = {}
     _writer_tup = (HOST, PORT)
     _writer.connect(_writer_tup)
-    _writer.send(str(2).encode('utf-8'))
-    _writer.sendall(data.encode('utf-8'))
+    _sendData['_funid'] = 2
+    _sendData['args0'] = data
+    _jsonData = json.dumps(_sendData)
+    writer.sendall(_jsonData.encode('utf-8'))
 
 def main():
     while True:

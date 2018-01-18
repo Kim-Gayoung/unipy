@@ -24,7 +24,7 @@ def deleteDoorInfo():
     deleteInfo = doorJson[int(selectDel)].get('d_time')
     _field_dict = {}
     _field_dict['_funid'] = 4
-    _field_dict['MOBILE_CLOUD_ARGS_0'] = deleteInfo
+    _field_dict['args0'] = deleteInfo
     req = urllib3.PoolManager()
     _isSuccess = req.request('POST', _url, fields=_field_dict).data.decode('utf-8')
     isSuccess = json.loads(_isSuccess)

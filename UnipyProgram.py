@@ -475,7 +475,7 @@ class CommLib():
         newAsts.append(ast.parse(whileSource))
         
         callAst = ast.Call(args = [], func = ast.Attribute(attr = "createObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
-        newAsts.append(ast.If(test = ast.parse(), body = [ast.Assign(targets = [ast.Name(id="_JsonObject&_jsonObject", ctx = ast.Load())], value = callAst)], orelse = [])
+        newAsts.append(ast.If(test = ast.parse('recieveData != ""'), body = [ast.Assign(targets = [ast.Name(id="_JsonObject&_jsonObject", ctx = ast.Load())], value = callAst)], orelse = []))
         
         num = 0
         
@@ -554,7 +554,7 @@ class CommLib():
             num = num + 1
         
         newAsts.append(ast.parse('_jsonData = json.dumps(_sendData)'))
-        newAsts.append(ast.parse('ser.write(_jsonData.encode("utf-8")'))
+        newAsts.append(ast.parse('ser.write(_jsonData.encode("utf-8"))'))
         newAsts.append(ast.parse('ser.close()'))
         
         return newAsts

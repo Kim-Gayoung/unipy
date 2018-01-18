@@ -16,23 +16,24 @@ def dispatch():
 
 def reqSend():
     _recieveData = ser.readline().strip().decode('utf-8')
+    global _jsonData
     _jsonData = json.loads(_recieveData)
-    val = _jsonData['val']
+    val = _jsonData['args0']
     val = ord(val)
     if (val == 48):
         pic_bin = takeAPhoto()
         _data_dict = {}
         _data_dict['_funid'] = 5
-        _data_dict['GATEWAY_CLOUD_ARGS_0'] = c
-        _data_dict['GATEWAY_CLOUD_ARGS_1'] = pic_bin
+        _data_dict['args0'] = c
+        _data_dict['args1'] = pic_bin
         req = urllib3.PoolManager()
         req.request('POST', _url, data=_data_dict)
     if (val == 49):
         pic_bin = takeAPhoto()
         _data_dict = {}
         _data_dict['_funid'] = 5
-        _data_dict['GATEWAY_CLOUD_ARGS_0'] = o
-        _data_dict['GATEWAY_CLOUD_ARGS_1'] = pic_bin
+        _data_dict['args0'] = o
+        _data_dict['args1'] = pic_bin
         req = urllib3.PoolManager()
         req.request('POST', _url, data=_data_dict)
 
