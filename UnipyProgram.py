@@ -455,16 +455,34 @@ class CommLib():
     def recieveBySerialAtArduino(node):
         # servoControl(self, methval, data1, data2, ..., datan)
         
-        # data1 = jsonObject["data1"]
-        # data2 = jsonObject["data2"]
+        # String recieveData = ""
+        # while Serial.available() > 0:
+        #   recieveData = Serial.readString()
+        
+        # if recieveData != "": 
+        #   JsonObejct& jsonObject = jsonBuffer.createObject(recieveData)
+        
+        # data1 = jsonObject["args1"]
+        # data2 = jsonObject["args2"]
         # ...
-        # datan = jsonObject["datan"]
+        # datan = jsonObject["argsn"]
         
         newAsts = []
         
+        newAsts.append(ast.parse('String_recieveData = ""'))
+        
+        whileSource = 'while Serial.available() > 0:\n' + '\trecieveData = Serial.readString()\n'
+        newAsts.append(ast.parse(whileSource))
+        
+        callAst = ast.Call(args = [], func = ast.Attribute(attr = "createObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
+        newAsts.append(ast.If(test = ast.parse(), body = [ast.Assign(targets = [ast.Name(id="_JsonObject&_jsonObject", ctx = ast.Load())], value = callAst)], orelse = [])
+        
+        num = 0
+        
         for arg in node.args.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse(sarg + ' = jsonObject["' + sarg + '"]'))
+            newAsts.append(ast.parse(sarg + ' = jsonObject["args' + str(num) + '"]'))
+            num = num + 1
 
         return newAsts
     
@@ -491,10 +509,15 @@ class CommLib():
             replaceAST.importList.append('json')
         
         newAsts.append(ast.parse('_recieveData = ser.readline().strip().decode("utf-8")'))
+        newAsts.append(ast.parse('global _jsonData'))
         newAsts.append(ast.parse('_jsonData = json.loads(_recieveData)'))
+        
+        num = 0
+        
         for arg in node.args.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse(sarg + ' = _jsonData["' + sarg + '"]'))
+            newAsts.append(ast.parse(sarg + ' = _jsonData["args' + str(num) + '"]'))
+            num = num + 1
 
         return newAsts
     
@@ -512,18 +535,28 @@ class CommLib():
         
         if 'serial' not in replaceAST.importList:
             replaceAST.importList.append('serial')
+        if 'json' not in replaceAST.importList:
+            replaceAST.importList.append('json')
             
+        newAsts.append(ast.parse('global ser'))
         newAsts.append(ast.parse('ser = serial.Serial("/dev/ttyACM0", 9600)'))
 
         smethval = CommLib.unparseExpr(methval)
-        newAsts.append(ast.parse('ser.write(str(' + smethval + ').encode("utf-8"))'))
-        newAsts.append(ast.parse('ser.write(b"\\n")'))
+        
+        newAsts.append(ast.parse('_sendData = {}'))
+        newAsts.append(ast.parse('_sendData["_funid"] = ' + smethval))
 
+        num = 0
+        
         for arg in node.value.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse('ser.write(' + sarg + '.encode("utf-8"))'))
-            newAsts.append(ast.parse('ser.write(b"\\n")'))
-
+            newAsts.append(ast.parse('_sendData["args' + str(num) + '"] = ' + sarg))
+            num = num + 1
+        
+        newAsts.append(ast.parse('_jsonData = json.dumps(_sendData)'))
+        newAsts.append(ast.parse('ser.write(_jsonData.encode("utf-8")'))
+        newAsts.append(ast.parse('ser.close()'))
+        
         return newAsts
     
     def sendBySocketAtRaspberry(node, methval):        
@@ -532,27 +565,73 @@ class CommLib():
         
         if 'socket' not in replaceAST.importList:
             replaceAST.importList.append('socket')
+        if 'json' not in replaceAST.importList:
+            replaceAST.importList.append('json')
+        
+        smethval = CommLib.unparseExpr(methval)
+        
+        newAsts.append(ast.parse('_sendData = {}'))
+        newAsts.append(ast.parse('_sendData["_funid"] = ' + smethval))
+        
+        num = 0
         
         for arg in node.value.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse('conn.sendall(' + sarg + ')'))
+            newAsts.append(ast.parse('_sendData["args' + str(num) + '"] = ' + sarg))
+            num = num + 1
+            
+        newAsts.append(ast.parse('conn.sendall(_sendData)'))
+        newAsts.append(ast.parse('conn.close()'))
             
         return newAsts
     
     def recieveBySocketAtRaspberry(node):
-        #sendtest(data)
+        # sendtest(data)
         
-        #conn, addr = s.accept()
-        #data = conn.recv(1024)
+        # conn, addr = s.accept()
+        
+        # _recieveData = ""
+        # _cnt = 0
+        # while True:
+        #   tmp = _conn.recv(1).decode("utf-8")
+        #   _recieveData += tmp
+        #   if tmp == '{':
+        #       _cnt = _cnt + 1
+        #   elif tmp == '}':
+        #       _cnt = _cnt - 1
+        #   if _cnt == 0:
+        #       break
+        
+        # _jsonData = json.loads(_recieveData)
+        
+        # args1 = _recieveData["args1"]
+        # args2 = _recieveData["args2"]
+        # ...
+        # argsn = _recieveData["argsn"]
         
         newAsts = []
         
         if 'socket' not in replaceAST.importList:
             replaceAST.importList.append('socket')
+        if 'json' not in replaceAST.importList:
+            replaceAST.importList.append('json')
+        
+        newAsts.append(ast.parse('_recieveData = ""'))
+        newAsts.append(ast.parse('_cnt = 0'))
+        
+        source = "while True:\n" + "\ttmp = _conn.recv(1).decode('utf-8')\n" + "\t_recieveData += tmp\n"
+        source += "\tif tmp == '{':\n" + "\t\t_cnt = _cnt + 1\n" + "\telif tmp == '}':\n" + "\t\t_cnt = _cnt - 1\n"
+        source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
+        
+        newAsts.append(ast.parse(source))
+        newAsts.append(ast.parse("_jsonData = json.loads(_recieveData)"))
+        
+        num = 0
         
         for arg in node.args.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse(sarg + ' = _conn.recv(1).decode("utf-8")'))
+            newAsts.append(ast.parse(sarg + ' = _jsonData["args' + str(num) + '"]'))
+            num = num + 1
         
         return newAsts
         
@@ -564,16 +643,24 @@ class CommLib():
             replaceAST.importList.append('socket')
         
         newAsts.append(ast.parse('_writer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
+
         smethval = CommLib.unparseExpr(methval)
+        newAsts.append(ast.parse('_sendData = {}'))
+        
+        num = 0
         
         for arg in node.value.args:
             sarg = CommLib.unparseExpr(arg)
             if arg == node.value.args[0]:
                 newAsts.append(ast.parse('_writer_tup = ' + sarg))
                 newAsts.append(ast.parse('_writer.connect(_writer_tup)'))
-                newAsts.append(ast.parse('_writer.send(str(' + smethval + ').encode("utf-8"))'))
+                newAsts.append(ast.parse('_sendData["_funid"] = ' + smethval))
             else:
-                newAsts.append(ast.parse('_writer.sendall(' + sarg + '.encode("utf-8"))'))
+                newAsts.append(ast.parse('_sendData["args' + str(num) + '"] = ' + sarg))
+                num = num + 1
+        
+        newAsts.append(ast.parse('_jsonData = json.dumps(_sendData)'))
+        newAsts.append(ast.parse('writer.sendall(_jsonData.encode("utf-8"))'))
         
         return newAsts
     
@@ -593,13 +680,15 @@ class CommLib():
         
         if 'urllib3' not in replaceAST.importList:
             replaceAST.importList.append('urllib3')
+        if 'json' not in replaceAST.importList:
+            replaceAST.importList.append('json')
         
         for arg in node.value.args:
             sarg = CommLib.unparseExpr(arg)
             if arg == node.value.args[0]:
                 ipAddress = sarg
             else:
-                newAsts.append(ast.parse('_field_dict["MOBILE_CLOUD_ARGS_' + str(num) + '"] = ' + sarg))
+                newAsts.append(ast.parse('_field_dict["args' + str(num) + '"] = ' + sarg))
                 num += 1
             
         newAsts.append(ast.parse("req = urllib3.PoolManager()"))
@@ -631,7 +720,7 @@ class CommLib():
             if arg == node.value.args[0]:
                 ipAddress = sarg
             else:
-                newAsts.append(ast.parse("_data_dict['GATEWAY_CLOUD_ARGS_" + str(num) +"'] = " + sarg))
+                newAsts.append(ast.parse("_data_dict['args" + str(num) +"'] = " + sarg))
                 num += 1
                 
         newAsts.append(ast.parse("req = urllib3.PoolManager()"))
