@@ -40,11 +40,11 @@ class MyArduino(Arduino):
 	_int_outerPin = 10
 	_int_pos = 110
   
-	def _void_setup():
+	def setup() -> None:
 		Serial.begin(9600)
 		outerServo.attach(outerPin)
 	
-	def _void_servoControl(_String_data):
+	def servoControl(data: int) -> None:
 		if data == 'r': # turn right
 			pos = pos - 10
 			data = 0
