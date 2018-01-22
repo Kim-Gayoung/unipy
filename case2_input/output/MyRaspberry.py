@@ -5,7 +5,7 @@ import socket
 HOST = ''
 PORT = 8888
 
-def dispatch():
+def dispatch() -> None:
     global _conn
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))

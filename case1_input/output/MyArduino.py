@@ -1,27 +1,27 @@
 
 _include = 'ArduinoJson.h'
-_int_doorPin = 2
-_int_preState = LOW
-_int_postState = LOW
-_DynamicJsonBuffer_jsonBuffer
+doorPin: int = 2
+preState: int = LOW
+postState: int = LOW
+jsonBuffer: DynamicJsonBuffer
 
-def _void_setup():
+def setup() -> None:
     Serial.begin(9600)
     pinMode(doorPin, INPUT)
 
-def _void_loop():
+def loop() -> None:
     readDoorSensor()
 
-def _void_readDoorSensor():
+def readDoorSensor() -> None:
     postState = digitalRead(doorPin)
     if ((postState == HIGH) and (preState == LOW)):
-        _JsonObject&_jsonObject = jsonBuffer.createObject()
+        jsonObject: JsonObject = jsonBuffer.createObject()
         jsonObject['_funid'] = 3
         jsonObject['args0'] = 0
         jsonObject.printTo(Serial)
         preState = postState
     if ((postState == LOW) and (preState == HIGH)):
-        _JsonObject&_jsonObject = jsonBuffer.createObject()
+        jsonObject: JsonObject = jsonBuffer.createObject()
         jsonObject['_funid'] = 3
         jsonObject['args0'] = 1
         jsonObject.printTo(Serial)

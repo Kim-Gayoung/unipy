@@ -104,7 +104,9 @@ class replaceAST(ast.NodeTransformer):
         
         for stmt in newNode.body:
             if type(stmt).__name__ == 'FunctionDef' and classArr.get(self.className) == 'Arduino' and needCommu:
-                newNode.body.insert(num, ast.parse('_DynamicJsonBuffer_jsonBuffer'))
+                annAst = ast.AnnAssign(target = ast.Name(id = 'jsonBuffer', ctx = ast.Load()), annotation = ast.Name(id = 'DynamicJsonBuffer', ctx = ast.Load()), value = None, simple = 1)
+                newNode.body.insert(num, annAst)
+#                newNode.body.insert(num, ast.parse('_DynamicJsonBuffer_jsonBuffer'))
 #                newNode.body.insert(num + 1, ast.Expr(value = ast.Name(id = '_JsonObject&_jsonObject', ctx = ast.Load())))
                 needCommu = False
                 break
@@ -117,7 +119,7 @@ class replaceAST(ast.NodeTransformer):
             loopFunction = self.getLoop()
             
             for stmt in newNode.body:
-                if type(stmt).__name__ == 'FunctionDef' and stmt.name == '_void_setup':                        
+                if type(stmt).__name__ == 'FunctionDef' and stmt.name == 'setup':                        
                     newNode.body.insert(num + 1, loopFunction)
                     break
                 else:
@@ -129,7 +131,7 @@ class replaceAST(ast.NodeTransformer):
             if type(stmt).__name__ == 'FunctionDef':
                 if classArr.get(self.className) == 'Arduino':
                     num = num + 1
-                    if stmt.name == '_void_loop':
+                    if stmt.name == 'loop':
                         newNode.body.insert(num, newFunction)
                         break
                 else:
@@ -239,7 +241,8 @@ class replaceAST(ast.NodeTransformer):
         
         loopFunction.args = []
         loopFunction.decorator_list = []
-        loopFunction.name = '_void_loop'
+        loopFunction.name = 'loop'
+        loopFunction.returns = ast.NameConstant(value = None)
         
         return loopFunction
             
@@ -276,12 +279,13 @@ class replaceAST(ast.NodeTransformer):
             n = n + 1
         
         if classArr.get(self.className) == 'Arduino':
-            newFunction.name = '_void_dispatch'
+            newFunction.name = 'dispatch'
         else:
             newFunction.name = 'dispatch'
             
         newFunction.args =[]
         newFunction.decorator_list = []
+        newFunction.returns = ast.NameConstant(value = None)
         self.dispatch_flag = True
         
         return newFunction
@@ -295,12 +299,13 @@ class replaceAST(ast.NodeTransformer):
 
         if comm == 'Serial':
             if calleeClass == 'Arduino':
-                newCommu.append(ast.parse('_String_str = ""'))
+                newCommu.append(ast.parse('str: String = ""'))
                 bodySource = "while Serial.available() > 0:\n" + "\tstr = Serial.readString()\n"
                 newCommu.append(ast.parse(bodySource))
                 ifBodyAst = []
                 valueAst = ast.Call(args = [ast.Name(id = "str", ctx = ast.Load())], func = ast.Attribute(attr = "parseObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
-                ifBodyAst.append(ast.Assign(targets = [ast.Name(id="JsonObject&_jsonObject", ctx = ast.Load())], value = valueAst))
+#                ifBodyAst.append(ast.Assign(targets = [ast.Name(id="JsonObject&_jsonObject", ctx = ast.Load())], value = valueAst))
+                ifBodyAst.append(ast.AnnAssign(target = [ast.Name(id="jsonObject", ctx = ast.Load())], annotation = ast.Name(id = "JsonObject", ctx = ast.Load()), value = valueAst, simple = 1))
                 newCommu.append(ast.If(test = ast.Compare(comparators = [ast.Str(s = "")], left = ast.Name(id = "str", ctx = ast.Load()), ops = [ast.NotEq()]), body = ifBodyAst, orelse = []))
                 newCommu.append(ast.parse("funid = jsonObject['_funid']"))
                 
@@ -436,8 +441,8 @@ class CommLib():
         newAsts = []
         
         callAst = ast.Call(args = [], func = ast.Attribute(attr = "createObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
-        newAsts.append(ast.Assign(targets = [ast.Name(id="_JsonObject&_jsonObject", ctx = ast.Load())], value = callAst))
-#        newAsts.append(ast.parse('_JsonObject&_jsonObject = jsonBuffer.createObject()'))
+#        newAsts.append(ast.Assign(targets = [ast.Name(id="_JsonObject&_jsonObject", ctx = ast.Load())], value = callAst))
+        newAsts.append(ast.AnnAssign(target = [ast.Name(id="jsonObject", ctx = ast.Load())], annotation = ast.Name(id = "JsonObject", ctx = ast.Load()), value = callAst, simple = 1))
         newAsts.append(ast.parse('jsonObject["_funid"] = ' + smethval))
         
         num = 0
@@ -460,7 +465,7 @@ class CommLib():
         #   recieveData = Serial.readString()
         
         # if recieveData != "": 
-        #   JsonObejct& jsonObject = jsonBuffer.createObject(recieveData)
+        #   JsonObject& jsonObject = jsonBuffer.createObject(recieveData)
         
         # data1 = jsonObject["args1"]
         # data2 = jsonObject["args2"]
@@ -469,13 +474,15 @@ class CommLib():
         
         newAsts = []
         
-        newAsts.append(ast.parse('String_recieveData = ""'))
+        newAsts.append(ast.parse('recieveData: String = ""'))
         
         whileSource = 'while Serial.available() > 0:\n' + '\trecieveData = Serial.readString()\n'
         newAsts.append(ast.parse(whileSource))
         
         callAst = ast.Call(args = [], func = ast.Attribute(attr = "createObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
-        newAsts.append(ast.If(test = ast.parse('recieveData != ""'), body = [ast.Assign(targets = [ast.Name(id="_JsonObject&_jsonObject", ctx = ast.Load())], value = callAst)], orelse = []))
+        compAst = ast.Compare(comparators = [ast.Str(s = "")], left = ast.Name(id = "recieveData", ctx = ast.Load()), ops = [ast.NotEq()])
+        bodyAst = ast.AnnAssign(target = [ast.Name(id="jsonObject", ctx = ast.Load())], annotation = ast.Name(id = "JsonObject", ctx = ast.Load()), value = callAst, simple = 1)
+        newAsts.append(ast.If(test = compAst, body = [bodyAst], orelse = []))
         
         num = 0
         

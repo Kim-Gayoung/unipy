@@ -5,7 +5,7 @@ import json
 import serial
 _url = 'http://168.131.152.196/common.php'
 
-def dispatch():
+def dispatch() -> None:
     global _ser, _jsonData
     _ser = serial.Serial('/dev/ttyACM0', 9600)
     jsonStr = ser.readline().strip().decode('utf-8')

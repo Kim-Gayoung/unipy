@@ -2,35 +2,34 @@
 _include = 'ArduinoJson.h'
 _include = 'Servo.h'
 _sensor_decl = _Servo_outerServo
-_int_outerPin = 10
-_int_pos = 110
-_DynamicJsonBuffer_jsonBuffer
+outerPin: int = 10
+pos: int = 110
+jsonBuffer: DynamicJsonBuffer
 
-def _void_setup():
+def setup() -> None:
     Serial.begin(9600)
     outerServo.attach(outerPin)
 
-def _void_loop():
+def loop() -> None:
     dispatch()
 
-def _void_dispatch():
-    _String_str = ''
+def dispatch() -> None:
+    str: String = ''
     while (Serial.available() > 0):
         str = Serial.readString()
     if (str != ''):
-        JsonObject&_jsonObject = jsonBuffer.parseObject(str)
+        jsonObject: JsonObject = jsonBuffer.parseObject(str)
     funid = jsonObject['_funid']
     if (funid == 4):
         servoControl()
 
-def _void_servoControl():
-    String_recieveData = ''
+def servoControl() -> None:
+    recieveData: String = ''
     while (Serial.available() > 0):
         recieveData = Serial.readString()
-    if 
-    (recieveData != ''):
-        _JsonObject&_jsonObject = jsonBuffer.createObject()
-    _String_data = jsonObject['args0']
+    if (recieveData != ''):
+        jsonObject: JsonObject = jsonBuffer.createObject()
+    data: String = jsonObject['args0']
     if (data == 'r'):
         pos = (pos - 10)
         data = 0
