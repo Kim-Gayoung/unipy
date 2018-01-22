@@ -1,7 +1,7 @@
 class MyArduino(Arduino):
-	_int_doorPin = 2
-	_int_preState = LOW
-	_int_postState = LOW
+	doorPin: int = 2
+	preState: int = LOW
+	postState: int = LOW
 
 	def setup() -> None:
 		Serial.begin(9600)

@@ -37,14 +37,14 @@ class MyArduino(Arduino):
 	_include = 'Servo.h'
 	_sensor_decl = _Servo_outerServo
   
-	_int_outerPin = 10
-	_int_pos = 110
+	outerPin: int = 10
+	pos: int = 110
   
 	def setup() -> None:
 		Serial.begin(9600)
 		outerServo.attach(outerPin)
 	
-	def servoControl(data: int) -> None:
+	def servoControl(data: str) -> None:
 		if data == 'r': # turn right
 			pos = pos - 10
 			data = 0
