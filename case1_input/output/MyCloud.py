@@ -3,7 +3,7 @@ import pymysql
 import os
 import sys
 
-def dispatch() -> None:
+def dispatch():
     funid = int(sys.argv[1])
     if (funid == 5):
         recordDoorState()

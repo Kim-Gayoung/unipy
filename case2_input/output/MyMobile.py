@@ -1,4 +1,5 @@
 
+import json
 import socket
 HOST = '168.131.151.110'
 PORT = 8888
@@ -11,7 +12,7 @@ def sendControlMessage(data):
     _sendData['_funid'] = 2
     _sendData['args0'] = data
     _jsonData = json.dumps(_sendData)
-    writer.sendall(_jsonData.encode('utf-8'))
+    _writer.sendall(_jsonData.encode('utf-8'))
 
 def main():
     while True:

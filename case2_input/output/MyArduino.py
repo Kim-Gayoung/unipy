@@ -15,11 +15,12 @@ def loop() -> None:
 
 def dispatch() -> None:
     str: String = ''
+    funid: int = 0
     while (Serial.available() > 0):
         str = Serial.readString()
     if (str != ''):
         jsonObject: JsonObject = jsonBuffer.parseObject(str)
-    funid = jsonObject['_funid']
+        funid = jsonObject['_funid']
     if (funid == 4):
         servoControl()
 
@@ -27,17 +28,18 @@ def servoControl() -> None:
     recieveData: String = ''
     while (Serial.available() > 0):
         recieveData = Serial.readString()
+    data: String
     if (recieveData != ''):
-        jsonObject: JsonObject = jsonBuffer.createObject()
-    data: String = jsonObject['args0']
+        jsonObject: JsonObject = jsonBuffer.parseObject(recieveData)
+        data = jsonObject['args0']
     if (data == 'r'):
         pos = (pos - 10)
-        data = 0
+        data = ''
         if (pos < 0):
             pos = 0
     elif (data == 'l'):
         pos = (pos + 10)
-        data = 0
+        data = ''
         if (pos > 180):
             pos = 180
     else:

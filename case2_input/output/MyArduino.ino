@@ -21,15 +21,16 @@ void loop() {
 void dispatch() {
     String str = "";
 
+    int funid = 0;
+
     while (Serial.available() > 0) {
         str = Serial.readString();
 
     }
     if (str != "") {
         JsonObject& jsonObject = jsonBuffer.parseObject(str);
+        funid = jsonObject["_funid"];
     }
-
-    funid = jsonObject["_funid"];
 
     if (funid == 4) {
         servoControl();
@@ -43,22 +44,23 @@ void servoControl() {
         recieveData = Serial.readString();
 
     }
-    if (recieveData != "") {
-        JsonObject& jsonObject = jsonBuffer.createObject();
-    }
+    String data;
 
-    String data = jsonObject["args0"];
+    if (recieveData != "") {
+        JsonObject& jsonObject = jsonBuffer.parseObject(recieveData);
+        data = jsonObject["args0"];
+    }
 
     if (data == "r") {
         pos = pos - 10;
-        data = 0;
+        data = "";
         if (pos < 0) {
             pos = 0;
         }
     }
     else if (data == "l") {
         pos = pos + 10;
-        data = 0;
+        data = "";
         if (pos > 180) {
             pos = 180;
         }

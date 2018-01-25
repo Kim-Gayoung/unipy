@@ -280,12 +280,12 @@ class replaceAST(ast.NodeTransformer):
         
         if classArr.get(self.className) == 'Arduino':
             newFunction.name = 'dispatch'
+            newFunction.returns = ast.NameConstant(value = None)
         else:
             newFunction.name = 'dispatch'
             
         newFunction.args =[]
         newFunction.decorator_list = []
-        newFunction.returns = ast.NameConstant(value = None)
         self.dispatch_flag = True
         
         return newFunction
@@ -301,13 +301,14 @@ class replaceAST(ast.NodeTransformer):
             if calleeClass == 'Arduino':
                 newCommu.append(ast.parse('str: String = ""'))
                 bodySource = "while Serial.available() > 0:\n" + "\tstr = Serial.readString()\n"
+                newCommu.append(ast.parse("funid: int = 0"))
                 newCommu.append(ast.parse(bodySource))
                 ifBodyAst = []
                 valueAst = ast.Call(args = [ast.Name(id = "str", ctx = ast.Load())], func = ast.Attribute(attr = "parseObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
 #                ifBodyAst.append(ast.Assign(targets = [ast.Name(id="JsonObject&_jsonObject", ctx = ast.Load())], value = valueAst))
                 ifBodyAst.append(ast.AnnAssign(target = [ast.Name(id="jsonObject", ctx = ast.Load())], annotation = ast.Name(id = "JsonObject", ctx = ast.Load()), value = valueAst, simple = 1))
+                ifBodyAst.append(ast.parse("funid = jsonObject['_funid']"))
                 newCommu.append(ast.If(test = ast.Compare(comparators = [ast.Str(s = "")], left = ast.Name(id = "str", ctx = ast.Load()), ops = [ast.NotEq()]), body = ifBodyAst, orelse = []))
-                newCommu.append(ast.parse("funid = jsonObject['_funid']"))
                 
                 return newCommu
             
@@ -327,8 +328,18 @@ class replaceAST(ast.NodeTransformer):
                 newCommu.append(ast.parse('s.bind((HOST, PORT))'))
                 newCommu.append(ast.parse('s.listen(10)'))
                 
-                source = 'while 1:\n' + '\t_conn, addr = s.accept()\n' + '\tfunid =int( _conn.recv(1024).decode("utf-8"))\n' + '\tif funid != None:\n' + '\t\tbreak'
+                newCommu.append(ast.parse('global _jsonData'))
+                newCommu.append(ast.parse('_recieveData = ""'))
+                newCommu.append(ast.parse('_cnt = 0'))
+                
+                source = '_conn, addr = s.accept()\n' + "while True:\n"
+                source += "\ttmp = _conn.recv(1).decode('utf-8')\n" + "\t_recieveData += tmp\n"
+                source += "\tif tmp == '{':\n" + "\t\t_cnt = _cnt + 1\n" + "\telif tmp == '}':\n" + "\t\t_cnt = _cnt - 1\n"
+                source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
                 newCommu.append(ast.parse(source))
+                
+                newCommu.append(ast.parse('_jsonData = json.loads(_recieveData)'))
+                newCommu.append(ast.parse('funid = _jsonData["_funid"]'))
                 
                 return newCommu
             
@@ -473,23 +484,26 @@ class CommLib():
         # datan = jsonObject["argsn"]
         
         newAsts = []
+        bodyAst = []
         
         newAsts.append(ast.parse('recieveData: String = ""'))
         
         whileSource = 'while Serial.available() > 0:\n' + '\trecieveData = Serial.readString()\n'
         newAsts.append(ast.parse(whileSource))
         
-        callAst = ast.Call(args = [], func = ast.Attribute(attr = "createObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
+        callAst = ast.Call(args = [ast.Name(id = "recieveData", ctx = ast.Load())], func = ast.Attribute(attr = "parseObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
         compAst = ast.Compare(comparators = [ast.Str(s = "")], left = ast.Name(id = "recieveData", ctx = ast.Load()), ops = [ast.NotEq()])
-        bodyAst = ast.AnnAssign(target = [ast.Name(id="jsonObject", ctx = ast.Load())], annotation = ast.Name(id = "JsonObject", ctx = ast.Load()), value = callAst, simple = 1)
-        newAsts.append(ast.If(test = compAst, body = [bodyAst], orelse = []))
+        bodyAst.append(ast.AnnAssign(target = [ast.Name(id="jsonObject", ctx = ast.Load())], annotation = ast.Name(id = "JsonObject", ctx = ast.Load()), value = callAst, simple = 1))
         
         num = 0
-        
         for arg in node.args.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse(sarg + ' = jsonObject["args' + str(num) + '"]'))
+            newAsts.append(ast.parse(sarg))
+            astArg = ast.parse(arg)
+            bodyAst.append(ast.parse(astArg.arg + ' = jsonObject["args' + str(num) + '"]'))
             num = num + 1
+        
+        newAsts.append(ast.If(test = compAst, body = bodyAst, orelse = []))
 
         return newAsts
     
@@ -594,21 +608,7 @@ class CommLib():
     
     def recieveBySocketAtRaspberry(node):
         # sendtest(data)
-        
-        # conn, addr = s.accept()
-        
-        # _recieveData = ""
-        # _cnt = 0
-        # while True:
-        #   tmp = _conn.recv(1).decode("utf-8")
-        #   _recieveData += tmp
-        #   if tmp == '{':
-        #       _cnt = _cnt + 1
-        #   elif tmp == '}':
-        #       _cnt = _cnt - 1
-        #   if _cnt == 0:
-        #       break
-        
+                
         # _jsonData = json.loads(_recieveData)
         
         # args1 = _recieveData["args1"]
@@ -622,17 +622,7 @@ class CommLib():
             replaceAST.importList.append('socket')
         if 'json' not in replaceAST.importList:
             replaceAST.importList.append('json')
-        
-        newAsts.append(ast.parse('_recieveData = ""'))
-        newAsts.append(ast.parse('_cnt = 0'))
-        
-        source = "while True:\n" + "\ttmp = _conn.recv(1).decode('utf-8')\n" + "\t_recieveData += tmp\n"
-        source += "\tif tmp == '{':\n" + "\t\t_cnt = _cnt + 1\n" + "\telif tmp == '}':\n" + "\t\t_cnt = _cnt - 1\n"
-        source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
-        
-        newAsts.append(ast.parse(source))
-        newAsts.append(ast.parse("_jsonData = json.loads(_recieveData)"))
-        
+            
         num = 0
         
         for arg in node.args.args:
@@ -648,6 +638,8 @@ class CommLib():
         
         if 'socket' not in replaceAST.importList:
             replaceAST.importList.append('socket')
+        if 'json' not in replaceAST.importList:
+            replaceAST.importList.append('json')
         
         newAsts.append(ast.parse('_writer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
 
@@ -667,7 +659,7 @@ class CommLib():
                 num = num + 1
         
         newAsts.append(ast.parse('_jsonData = json.dumps(_sendData)'))
-        newAsts.append(ast.parse('writer.sendall(_jsonData.encode("utf-8"))'))
+        newAsts.append(ast.parse('_writer.sendall(_jsonData.encode("utf-8"))'))
         
         return newAsts
     

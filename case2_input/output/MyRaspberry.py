@@ -5,22 +5,15 @@ import socket
 HOST = ''
 PORT = 8888
 
-def dispatch() -> None:
+def dispatch():
     global _conn
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
     s.listen(10)
-    while 1:
-        (_conn, addr) = s.accept()
-        funid = int(_conn.recv(1024).decode('utf-8'))
-        if (funid != None):
-            break
-    if (funid == 2):
-        sendMessage()
-
-def sendMessage():
+    global _jsonData
     _recieveData = ''
     _cnt = 0
+    (_conn, addr) = s.accept()
     while True:
         tmp = _conn.recv(1).decode('utf-8')
         _recieveData += tmp
@@ -31,6 +24,11 @@ def sendMessage():
         if (_cnt == 0):
             break
     _jsonData = json.loads(_recieveData)
+    funid = _jsonData['_funid']
+    if (funid == 2):
+        sendMessage()
+
+def sendMessage():
     data = _jsonData['args0']
     global ser
     ser = serial.Serial('/dev/ttyACM0', 9600)

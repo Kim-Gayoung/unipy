@@ -47,14 +47,14 @@ class MyArduino(Arduino):
 	def servoControl(data: String) -> None:
 		if data == 'r': # turn right
 			pos = pos - 10
-			data = 0
+			data = ''
 		
 			if pos < 0:
 				pos = 0
 				
 		elif data == 'l': # turn left
 			pos = pos + 10
-			data = 0
+			data = ''
 			
 			if pos > 180:
 				pos = 180
