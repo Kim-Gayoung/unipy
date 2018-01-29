@@ -20,6 +20,7 @@ def save_picture(pic_bin):
     while os.path.isfile(pic_loc):
         num = (num + 1)
         pic_loc = (('D:\\APM\\Apache24\\htdocs\\sechome\\door\\door' + str(num)) + '.jpg')
+        
     return pic_loc
 
 def save_doorState(openclose, d_pic_loc):

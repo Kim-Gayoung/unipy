@@ -15,14 +15,18 @@ def loop() -> None:
 def readDoorSensor() -> None:
     postState = digitalRead(doorPin)
     if ((postState == HIGH) and (preState == LOW)):
+        sendFunid: JsonObject = jsonBuffer.createObject()
+        sendFunid['_funid'] = 3
+        sendFunid.printTo(Serial)
         jsonObject: JsonObject = jsonBuffer.createObject()
-        jsonObject['_funid'] = 3
         jsonObject['args0'] = 0
         jsonObject.printTo(Serial)
         preState = postState
     if ((postState == LOW) and (preState == HIGH)):
+        sendFunid: JsonObject = jsonBuffer.createObject()
+        sendFunid['_funid'] = 3
+        sendFunid.printTo(Serial)
         jsonObject: JsonObject = jsonBuffer.createObject()
-        jsonObject['_funid'] = 3
         jsonObject['args0'] = 1
         jsonObject.printTo(Serial)
         preState = postState

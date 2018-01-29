@@ -308,7 +308,7 @@ class replaceAST(ast.NodeTransformer):
                 newCommu.append(ast.parse('_ser = serial.Serial("/dev/ttyACM0", 9600)'))
                 newCommu.append(ast.parse('jsonStr = _ser.readline().strip().decode("utf-8")'))
                 newCommu.append(ast.parse('_jsonData = json.loads(jsonStr)'))
-                newCommu.append(ast.parse('_funid = _jsonData["_funid"]'))
+                newCommu.append(ast.parse('funid = _jsonData["_funid"]'))
                 
                 return newCommu
                 
@@ -717,8 +717,8 @@ class CommLib():
         ipAddress = ""
         
         smethval = CommLib.unparseExpr(methval)
-        newAsts.append(ast.parse("_data_dict = {}"))
-        newAsts.append(ast.parse("_data_dict['_funid'] = " + smethval))
+        newAsts.append(ast.parse("_field_dict = {}"))
+        newAsts.append(ast.parse("_field_dict['_funid'] = " + smethval))
         
         if 'urllib3' not in replaceAST.importList:
             replaceAST.importList.append('urllib3')
@@ -728,7 +728,7 @@ class CommLib():
             if arg == node.value.args[0]:
                 ipAddress = sarg
             else:
-                newAsts.append(ast.parse("_data_dict['args" + str(num) +"'] = " + sarg))
+                newAsts.append(ast.parse("_field_dict['args" + str(num) +"'] = " + sarg))
                 num += 1
                 
         newAsts.append(ast.parse("req = urllib3.PoolManager()"))
@@ -736,9 +736,9 @@ class CommLib():
         if targets != []:    
             for target in targets:
                 starget = CommLib.unparseExpr(target)
-                newAsts.append(ast.parse(starget + ' = req.request("POST", ' + ipAddress + ', data = _data_dict)'))
+                newAsts.append(ast.parse(starget + ' = req.request("POST", ' + ipAddress + ', fields = _field_dict)'))
         else:
-            newAsts.append(ast.parse("req.request('POST', " + ipAddress + ", data = _data_dict)"))
+            newAsts.append(ast.parse("req.request('POST', " + ipAddress + ", fields = _field_dict)"))
         
         return newAsts
     

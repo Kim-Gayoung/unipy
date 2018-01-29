@@ -10,6 +10,9 @@ def sendControlMessage(data):
     _writer_tup = (HOST, PORT)
     _writer.connect(_writer_tup)
     _sendData['_funid'] = 2
+    _sendFunid = json.dumps(_sendData)
+    _writer.sendall(_sendFunid.encode('utf-8'))
+    _sendData.clear()
     _sendData['args0'] = data
     _jsonData = json.dumps(_sendData)
     _writer.sendall(_jsonData.encode('utf-8'))

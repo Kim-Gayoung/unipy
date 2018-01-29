@@ -16,9 +16,9 @@ def dispatch():
 
 def reqSend():
     _recieveData = ser.readline().strip().decode('utf-8')
-    global _jsonData
-    _jsonData = json.loads(_recieveData)
-    val = _jsonData['args0']
+    global _recieveJsonData
+    _recieveJsonData = json.loads(_recieveData)
+    val = _recieveJsonData['args0']
     val = ord(val)
     if (val == 48):
         pic_bin = takeAPhoto()
