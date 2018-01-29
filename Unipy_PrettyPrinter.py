@@ -5,6 +5,7 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
        self.s_code = ""
        self.arr = ""
        self.indent = 0
+       self.isChar = False
        
     def visit_Module(self, node):
         self.generic_visit(node)
@@ -182,13 +183,21 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
         self.s_code += ";\n"
     
     def visit_Call(self, node):
-        self.generic_visit(ast.Expr(value = node.func))
-        self.s_code += "("
-        for arg in node.args:
-            self.generic_visit(ast.Expr(value = arg))
-            if arg != node.args[len(node.args) - 1]:
-                self.s_code += ", "
-        self.s_code += ")"
+        if type(node.func).__name__ == "Name" and node.func.id == "char":
+            self.isChar = True
+            for arg in node.args:
+                self.generic_visit(ast.Expr(value = arg))
+                if arg != node.args[len(node.args) - 1]:
+                    self.s_code += ", "
+        else:
+            self.generic_visit(ast.Expr(value = node.func))
+    
+            self.s_code += "("
+            for arg in node.args:
+                self.generic_visit(ast.Expr(value = arg))
+                if arg != node.args[len(node.args) - 1]:
+                    self.s_code += ", "
+            self.s_code += ")"
             
     def visit_Attribute(self, node):
         self.generic_visit(ast.Expr(value = node.value))
@@ -206,7 +215,11 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
         self.generic_visit(node)
         
     def visit_Str(self, node):
-        self.s_code += repr(node.s).replace("'", '"')
+        if self.isChar == False:
+            self.s_code += repr(node.s).replace("'", '"')
+        else:
+            self.s_code += repr(node.s).replace('"', "'")
+            self.isChar = False
         
         self.generic_visit(node)
     

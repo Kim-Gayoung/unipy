@@ -52,16 +52,7 @@ class replaceAST(ast.NodeTransformer):
 
     def visit_FunctionDef(self, node):
         for callee in calleeArr:
-            name = ""
-            n = ""
-            if node.name.__contains__('_'):
-                name = node.name.split('_')
-                if name.__contains__(''):
-                    name.remove('')
-                for s in name[1:]:
-                    n += s
-            else:
-                n = node.name
+            n = node.name
                 
             if callee[0] == n and callee[1] == self.className:
                 insertBody = CommLib.commRecvLib(self.className, callee[2], node)
@@ -300,7 +291,7 @@ class replaceAST(ast.NodeTransformer):
         if comm == 'Serial':
             if calleeClass == 'Arduino':
                 newCommu.append(ast.parse('str: String = ""'))
-                bodySource = "while Serial.available() > 0:\n" + "\tstr = Serial.readString()\n"
+                bodySource = "if Serial.available() > 0:\n" + "\tstr = Serial.readStringUntil(char('\\n'))\n"
                 newCommu.append(ast.parse("funid: int = 0"))
                 newCommu.append(ast.parse(bodySource))
                 ifBodyAst = []
@@ -315,7 +306,7 @@ class replaceAST(ast.NodeTransformer):
             elif calleeClass == 'Raspberry':
                 newCommu.append(ast.parse('global _ser, _jsonData'))
                 newCommu.append(ast.parse('_ser = serial.Serial("/dev/ttyACM0", 9600)'))
-                newCommu.append(ast.parse('jsonStr = ser.readline().strip().decode("utf-8")'))
+                newCommu.append(ast.parse('jsonStr = _ser.readline().strip().decode("utf-8")'))
                 newCommu.append(ast.parse('_jsonData = json.loads(jsonStr)'))
                 newCommu.append(ast.parse('_funid = _jsonData["_funid"]'))
                 
@@ -328,7 +319,7 @@ class replaceAST(ast.NodeTransformer):
                 newCommu.append(ast.parse('s.bind((HOST, PORT))'))
                 newCommu.append(ast.parse('s.listen(10)'))
                 
-                newCommu.append(ast.parse('global _jsonData'))
+                newCommu.append(ast.parse('global _recieveJsonData'))
                 newCommu.append(ast.parse('_recieveData = ""'))
                 newCommu.append(ast.parse('_cnt = 0'))
                 
@@ -338,8 +329,8 @@ class replaceAST(ast.NodeTransformer):
                 source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
                 newCommu.append(ast.parse(source))
                 
-                newCommu.append(ast.parse('_jsonData = json.loads(_recieveData)'))
-                newCommu.append(ast.parse('funid = _jsonData["_funid"]'))
+                newCommu.append(ast.parse('_recieveJsonData = json.loads(_recieveData)'))
+                newCommu.append(ast.parse('funid = _recieveJsonData["_funid"]'))
                 
                 return newCommu
             
@@ -451,11 +442,11 @@ class CommLib():
         smethval = CommLib.unparseExpr(methval)
         newAsts = []
         
-        callAst = ast.Call(args = [], func = ast.Attribute(attr = "createObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
-#        newAsts.append(ast.Assign(targets = [ast.Name(id="_JsonObject&_jsonObject", ctx = ast.Load())], value = callAst))
-        newAsts.append(ast.AnnAssign(target = [ast.Name(id="jsonObject", ctx = ast.Load())], annotation = ast.Name(id = "JsonObject", ctx = ast.Load()), value = callAst, simple = 1))
-        newAsts.append(ast.parse('jsonObject["_funid"] = ' + smethval))
+        newAsts.append(ast.parse('sendFunid: JsonObject = jsonBuffer.createObject()'))
+        newAsts.append(ast.parse('sendFunid["_funid"] = ' + smethval))
+        newAsts.append(ast.parse('sendFunid.printTo(Serial)'))
         
+        newAsts.append(ast.parse('jsonObject: JsonObject = jsonBuffer.createObject()'))
         num = 0
         
         for arg in node.value.args:
@@ -475,8 +466,7 @@ class CommLib():
         # while Serial.available() > 0:
         #   recieveData = Serial.readString()
         
-        # if recieveData != "": 
-        #   JsonObject& jsonObject = jsonBuffer.createObject(recieveData)
+        # JsonObject& jsonObject = jsonBuffer.createObject(recieveData)
         
         # data1 = jsonObject["args1"]
         # data2 = jsonObject["args2"]
@@ -484,26 +474,21 @@ class CommLib():
         # datan = jsonObject["argsn"]
         
         newAsts = []
-        bodyAst = []
         
-        newAsts.append(ast.parse('recieveData: String = ""'))
-        
-        whileSource = 'while Serial.available() > 0:\n' + '\trecieveData = Serial.readString()\n'
-        newAsts.append(ast.parse(whileSource))
-        
-        callAst = ast.Call(args = [ast.Name(id = "recieveData", ctx = ast.Load())], func = ast.Attribute(attr = "parseObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
-        compAst = ast.Compare(comparators = [ast.Str(s = "")], left = ast.Name(id = "recieveData", ctx = ast.Load()), ops = [ast.NotEq()])
-        bodyAst.append(ast.AnnAssign(target = [ast.Name(id="jsonObject", ctx = ast.Load())], annotation = ast.Name(id = "JsonObject", ctx = ast.Load()), value = callAst, simple = 1))
+        newAsts.append(ast.parse('recieveData: String = Serial.readStringUntil(char("\\n"))'))
+                
+        ifSource = "if recieveData != '':\n" + "\trecieveJson: JsonObject = jsonBuffer.parseObject(recieveData)\n"
         
         num = 0
         for arg in node.args.args:
             sarg = CommLib.unparseExpr(arg)
+            argAst = ast.parse(sarg)
             newAsts.append(ast.parse(sarg))
-            astArg = ast.parse(arg)
-            bodyAst.append(ast.parse(astArg.arg + ' = jsonObject["args' + str(num) + '"]'))
+            ifSource += "\ttmp" + str(num) + ": " + argAst.body[0].annotation.id + " = recieveJson['args" + str(num) + "']\n"
+            ifSource += "\t" + argAst.body[0].target.id + " = tmp" + str(num) + "\n"
             num = num + 1
-        
-        newAsts.append(ast.If(test = compAst, body = bodyAst, orelse = []))
+
+        newAsts.append(ast.parse(ifSource))
 
         return newAsts
     
@@ -529,15 +514,15 @@ class CommLib():
         if 'json' not in replaceAST.importList:
             replaceAST.importList.append('json')
         
-        newAsts.append(ast.parse('_recieveData = ser.readline().strip().decode("utf-8")'))
-        newAsts.append(ast.parse('global _jsonData'))
-        newAsts.append(ast.parse('_jsonData = json.loads(_recieveData)'))
+        newAsts.append(ast.parse('_recieveData = _ser.readline().strip().decode("utf-8")'))
+        newAsts.append(ast.parse('global _recieveJsonData'))
+        newAsts.append(ast.parse('_recieveJsonData = json.loads(_recieveData)'))
         
         num = 0
         
         for arg in node.args.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse(sarg + ' = _jsonData["args' + str(num) + '"]'))
+            newAsts.append(ast.parse(sarg + ' = _recieveJsonData["args' + str(num) + '"]'))
             num = num + 1
 
         return newAsts
@@ -566,6 +551,10 @@ class CommLib():
         
         newAsts.append(ast.parse('_sendData = {}'))
         newAsts.append(ast.parse('_sendData["_funid"] = ' + smethval))
+        newAsts.append(ast.parse('_sendFunid = json.dumps(_sendData)'))
+        newAsts.append(ast.parse('ser.write(_sendFunid.encode("utf-8"))'))
+        newAsts.append(ast.parse('ser.write("\\n".encode("utf-8"))'))
+        newAsts.append(ast.parse('_sendData.clear()'))
 
         num = 0
         
@@ -576,6 +565,7 @@ class CommLib():
         
         newAsts.append(ast.parse('_jsonData = json.dumps(_sendData)'))
         newAsts.append(ast.parse('ser.write(_jsonData.encode("utf-8"))'))
+        newAsts.append(ast.parse('ser.write("\\n".encode("utf-8"))'))
         newAsts.append(ast.parse('ser.close()'))
         
         return newAsts
@@ -593,6 +583,9 @@ class CommLib():
         
         newAsts.append(ast.parse('_sendData = {}'))
         newAsts.append(ast.parse('_sendData["_funid"] = ' + smethval))
+        newAsts.append(ast.parse('_sendFunid = json.dumps(_sendData)'))
+        newAsts.append(ast.parse('conn.sendall(_sendFunid.encode("utf-8"))'))
+        newAsts.append(ast.parse('_sendData.clear()'))
         
         num = 0
         
@@ -600,8 +593,9 @@ class CommLib():
             sarg = CommLib.unparseExpr(arg)
             newAsts.append(ast.parse('_sendData["args' + str(num) + '"] = ' + sarg))
             num = num + 1
-            
-        newAsts.append(ast.parse('conn.sendall(_sendData)'))
+        
+        newAsts.append(ast.parse('_jsonData = json.dumps(_sendData)'))
+        newAsts.append(ast.parse('conn.sendall(_sendData.encode("utf-8"))'))
         newAsts.append(ast.parse('conn.close()'))
             
         return newAsts
@@ -622,6 +616,18 @@ class CommLib():
             replaceAST.importList.append('socket')
         if 'json' not in replaceAST.importList:
             replaceAST.importList.append('json')
+        
+        
+        newAsts.append(ast.parse('_recieveData = ""'))
+        newAsts.append(ast.parse('_cnt = 0'))
+        
+        source = "while True:\n"
+        source += "\ttmp = _conn.recv(1).decode('utf-8')\n" + "\t_recieveData += tmp\n"
+        source += "\tif tmp == '{':\n" + "\t\t_cnt = _cnt + 1\n" + "\telif tmp == '}':\n" + "\t\t_cnt = _cnt - 1\n"
+        source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
+        newAsts.append(ast.parse(source))
+        
+        newAsts.append(ast.parse('_jsonData = json.loads(_recieveData)'))
             
         num = 0
         
@@ -646,17 +652,20 @@ class CommLib():
         smethval = CommLib.unparseExpr(methval)
         newAsts.append(ast.parse('_sendData = {}'))
         
+        sparm = CommLib.unparseExpr(node.value.args[0])
+        newAsts.append(ast.parse('_writer_tup = ' + sparm))
+        newAsts.append(ast.parse('_writer.connect(_writer_tup)'))
+        newAsts.append(ast.parse('_sendData["_funid"] = ' + smethval))
+        newAsts.append(ast.parse('_sendFunid = json.dumps(_sendData)'))
+        newAsts.append(ast.parse('_writer.sendall(_sendFunid.encode("utf-8"))'))
+        newAsts.append(ast.parse('_sendData.clear()'))
+
         num = 0
         
-        for arg in node.value.args:
+        for arg in node.value.args[1:]:
             sarg = CommLib.unparseExpr(arg)
-            if arg == node.value.args[0]:
-                newAsts.append(ast.parse('_writer_tup = ' + sarg))
-                newAsts.append(ast.parse('_writer.connect(_writer_tup)'))
-                newAsts.append(ast.parse('_sendData["_funid"] = ' + smethval))
-            else:
-                newAsts.append(ast.parse('_sendData["args' + str(num) + '"] = ' + sarg))
-                num = num + 1
+            newAsts.append(ast.parse('_sendData["args' + str(num) + '"] = ' + sarg))
+            num = num + 1
         
         newAsts.append(ast.parse('_jsonData = json.dumps(_sendData)'))
         newAsts.append(ast.parse('_writer.sendall(_jsonData.encode("utf-8"))'))
