@@ -308,8 +308,10 @@ class replaceAST(ast.NodeTransformer):
             
             elif calleeClass == 'Raspberry':
                 newCommu.append(ast.parse('global _ser, _jsonData'))
-                ifSource = 'if _ser == None:\n' + '\t_ser = serial.Serial("/dev/ttyACM0", 9600)\n'
-                newCommu.append(ast.parse(ifSource))
+                trySource = 'try:\n' + '\tif _ser == None:\n'
+                trySource += '\t\traise NameError\n'
+                trySource += 'except NameError:\n' + '\t_ser = serial.Serial("/dev/ttyACM0", 9600)\n'
+                newCommu.append(ast.parse(trySource))
                 newCommu.append(ast.parse('jsonStr = _ser.readline().strip().decode("utf-8")'))
                 newCommu.append(ast.parse('_jsonData = json.loads(jsonStr)'))
                 newCommu.append(ast.parse('funid = _jsonData["_funid"]'))
@@ -319,10 +321,12 @@ class replaceAST(ast.NodeTransformer):
         elif comm == 'Socket':
             if calleeClass == 'Raspberry':
                 newCommu.append(ast.parse('global _conn'))
-                ifSource = 'if _conn == None:\n' + '\ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n'
-                ifSource += '\ts.bind((HOST, PORT))\n' + '\ts.listen(10)\n'
-                ifSource += '\t_conn, addr = s.accept()\n'
-                newCommu.append(ast.parse(ifSource))
+                trySource = 'try:\n' + '\tif _conn == None:\n'
+                trySource += '\t\traise NameError\n'
+                trySource += 'except NameError:\n' + '\ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n'
+                trySource += '\ts.bind((HOST, PORT))\n' + '\ts.listen(10)\n'
+                trySource += '\t_conn, addr = s.accept()\n'
+                newCommu.append(ast.parse(trySource))
 #                newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
 #                newCommu.append(ast.parse('s.bind((HOST, PORT))'))
 #                newCommu.append(ast.parse('s.listen(10)'))
@@ -337,17 +341,20 @@ class replaceAST(ast.NodeTransformer):
                 source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
                 newCommu.append(ast.parse(source))
                 
-                newCommu.append(ast.parse('_recieveJsonData = json.loads(_recieveData)'))
+                newCommu.append(ast.parse('if _recieveData != "":\n\t_recieveJsonData = json.loads(_recieveData)\n'))
                 newCommu.append(ast.parse('funid = _recieveJsonData["_funid"]'))
                 
                 return newCommu
             
             elif calleeClass == 'Mobile':
-                newCommu.append(ast.parse('global conn'))
-                ifSource = 'if conn == None:\n' + '\ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n'
-                ifSource += '\ts.bind((HOST, PORT))\n' + '\ts.listen(10)\n'
-                ifSource += '\tconn, addr = s.accept()\n'
-                newCommu.append(ast.parse(ifSource))
+                newCommu.append(ast.parse('global _conn'))
+                trySource = 'try:\n' + '\tif _conn == None:\n'
+                trySource += '\t\traise NameError\n'
+                trySource += 'except NameError:\n'
+                trySource += '\ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n'
+                trySource += '\ts.bind((HOST, PORT))\n' + '\ts.listen(10)\n'
+                trySource += '\t_conn, addr = s.accept()\n'
+                newCommu.append(ast.parse(trySource))
 #                newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
 #                newCommu.append(ast.parse('conn, addr = s.accept()'))
                 
@@ -534,7 +541,8 @@ class CommLib():
         
         newAsts.append(ast.parse('_recieveData = _ser.readline().strip().decode("utf-8")'))
         newAsts.append(ast.parse('global _recieveJsonData'))
-        newAsts.append(ast.parse('_recieveJsonData = json.loads(_recieveData)'))
+        
+        newAsts.append(ast.parse('if _recieveData != "":\n\t_recieveJsonData = json.loads(_recieveData)\n'))
         
         num = 0
         
@@ -645,7 +653,7 @@ class CommLib():
         source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
         newAsts.append(ast.parse(source))
         
-        newAsts.append(ast.parse('_jsonData = json.loads(_recieveData)'))
+        newAsts.append(ast.parse('if _recieveData != "":\n\t_jsonData = json.loads(_recieveData)\n'))
             
         num = 0
         

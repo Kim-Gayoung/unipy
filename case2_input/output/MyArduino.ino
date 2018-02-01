@@ -35,6 +35,8 @@ void dispatch() {
     if (funid == 4) {
         servoControl();
     }
+
+    funid = -1;
 }
 
 void servoControl() {

@@ -23,6 +23,7 @@ def dispatch() -> None:
         funid = jsonObject['_funid']
     if (funid == 4):
         servoControl()
+    funid = (- 1)
 
 def servoControl() -> None:
     recieveData: String = Serial.readStringUntil(char('\n'))
