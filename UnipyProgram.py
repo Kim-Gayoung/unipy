@@ -138,9 +138,11 @@ class replaceAST(ast.NodeTransformer):
         newNode = ast.ClassDef(bases = node.bases, body = newNode, decorator_list = node.decorator_list, name = node.name)
                
         if self.dispatch_flag == True and classArr.get(self.className) != 'Arduino':
-            dispatchValue = ast.Call(args = [], func = ast.Name(id='dispatch', ctx=ast.Load()), keywords = [])
-            dispatchCall = ast.Assign(targets = [ast.Name(id='_firstCall', ctx = ast.Store())], value = dispatchValue)
-            newNode.body.body.append(dispatchCall)
+            source = "while True:\n" + "\t_firstCall = dispatch()\n"
+            newNode.body.body.append(ast.parse(source))
+#            dispatchValue = ast.Call(args = [], func = ast.Name(id='dispatch', ctx=ast.Load()), keywords = [])
+#            dispatchCall = ast.Assign(targets = [ast.Name(id='_firstCall', ctx = ast.Store())], value = dispatchValue)
+#            newNode.body.body.append(dispatchCall)
         
         return newNode        
     
@@ -274,7 +276,8 @@ class replaceAST(ast.NodeTransformer):
             newFunction.returns = ast.NameConstant(value = None)
         else:
             newFunction.name = 'dispatch'
-            
+        
+        newFunction.body.append(ast.parse('funid = -1'))
         newFunction.args =[]
         newFunction.decorator_list = []
         self.dispatch_flag = True
@@ -305,7 +308,8 @@ class replaceAST(ast.NodeTransformer):
             
             elif calleeClass == 'Raspberry':
                 newCommu.append(ast.parse('global _ser, _jsonData'))
-                newCommu.append(ast.parse('_ser = serial.Serial("/dev/ttyACM0", 9600)'))
+                ifSource = 'if _ser == None:\n' + '\t_ser = serial.Serial("/dev/ttyACM0", 9600)\n'
+                newCommu.append(ast.parse(ifSource))
                 newCommu.append(ast.parse('jsonStr = _ser.readline().strip().decode("utf-8")'))
                 newCommu.append(ast.parse('_jsonData = json.loads(jsonStr)'))
                 newCommu.append(ast.parse('funid = _jsonData["_funid"]'))
@@ -315,15 +319,19 @@ class replaceAST(ast.NodeTransformer):
         elif comm == 'Socket':
             if calleeClass == 'Raspberry':
                 newCommu.append(ast.parse('global _conn'))
-                newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
-                newCommu.append(ast.parse('s.bind((HOST, PORT))'))
-                newCommu.append(ast.parse('s.listen(10)'))
+                ifSource = 'if _conn == None:\n' + '\ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n'
+                ifSource += '\ts.bind((HOST, PORT))\n' + '\ts.listen(10)\n'
+                ifSource += '\t_conn, addr = s.accept()\n'
+                newCommu.append(ast.parse(ifSource))
+#                newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
+#                newCommu.append(ast.parse('s.bind((HOST, PORT))'))
+#                newCommu.append(ast.parse('s.listen(10)'))
                 
                 newCommu.append(ast.parse('global _recieveJsonData'))
                 newCommu.append(ast.parse('_recieveData = ""'))
                 newCommu.append(ast.parse('_cnt = 0'))
                 
-                source = '_conn, addr = s.accept()\n' + "while True:\n"
+                source = "while True:\n"
                 source += "\ttmp = _conn.recv(1).decode('utf-8')\n" + "\t_recieveData += tmp\n"
                 source += "\tif tmp == '{':\n" + "\t\t_cnt = _cnt + 1\n" + "\telif tmp == '}':\n" + "\t\t_cnt = _cnt - 1\n"
                 source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
@@ -335,9 +343,19 @@ class replaceAST(ast.NodeTransformer):
                 return newCommu
             
             elif calleeClass == 'Mobile':
-                newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
-                newCommu.append(ast.parse('conn, addr = s.accept()'))
-                newCommu.append(ast.parse('funid = conn.recv(1024).decode("utf-8")'))
+                newCommu.append(ast.parse('global conn'))
+                ifSource = 'if conn == None:\n' + '\ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n'
+                ifSource += '\ts.bind((HOST, PORT))\n' + '\ts.listen(10)\n'
+                ifSource += '\tconn, addr = s.accept()\n'
+                newCommu.append(ast.parse(ifSource))
+#                newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
+#                newCommu.append(ast.parse('conn, addr = s.accept()'))
+                
+                source = "while True:\n"
+                source += "\ttmp = _conn.recv(1).decode('utf-8')\n" + "\t_recieveData += tmp\n"
+                source += "\tif tmp == '{':\n" + "\t\t_cnt = _cnt + 1\n" + "\telif tmp == '}':\n" + "\t\t_cnt = _cnt - 1\n"
+                source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
+                newCommu.append(ast.parse(source))
                 
                 return newCommu
     
