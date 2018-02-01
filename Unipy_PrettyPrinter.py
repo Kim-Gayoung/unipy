@@ -338,7 +338,21 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
             
         self.generic_visit(ast.Expr(value = node.right))
         
-    
+    def visit_UnaryOp(self, node):
+        sop = node.op
+        
+        if type(sop).__name__ == 'Invert':
+            self.s_code += '~'
+        elif type(sop).__name__ == 'Not':
+            self.s_code += '!'
+        elif type(sop).__name__ == 'UAdd':
+            self.s_code += '+'
+        elif type(sop).__name__ == 'USub':
+            self.s_code += '-'
+        else:
+            print ("Invalid operator", sop, type(sop).__name__)
+            
+        self.generic_visit(node)
                 
     def declVariable(self, tid):
         if tid.__contains__('_int'):
