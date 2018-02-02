@@ -25,6 +25,7 @@ void readDoorSensor() {
         JsonObject& jsonObject = jsonBuffer.createObject();
         jsonObject["args0"] = 0;
         jsonObject.printTo(Serial);
+        jsonBuffer.clear();
         preState = postState;
     }
 
@@ -35,6 +36,7 @@ void readDoorSensor() {
         JsonObject& jsonObject = jsonBuffer.createObject();
         jsonObject["args0"] = 1;
         jsonObject.printTo(Serial);
+        jsonBuffer.clear();
         preState = postState;
     }
 }

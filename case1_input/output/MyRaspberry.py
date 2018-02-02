@@ -7,24 +7,26 @@ _url = 'http://168.131.152.196/common.php'
 
 def dispatch():
     global _ser, _jsonData
-    try:
-        if (_ser == None):
-            raise NameError
-    except NameError:
-        _ser = serial.Serial('/dev/ttyACM0', 9600)
-    jsonStr = _ser.readline().strip().decode('utf-8')
-    _jsonData = json.loads(jsonStr)
-    funid = _jsonData['_funid']
-    if (funid == 3):
-        reqSend()
-    funid = (- 1)
+    _ser = serial.Serial('/dev/ttyACM0', 9600)
+    while True:
+        jsonStr = _ser.readline().strip().decode('utf-8')
+        if (jsonStr == ''):
+            continue
+        _jsonData = json.loads(jsonStr)
+        funid = _jsonData['_funid']
+        if (funid == 3):
+            reqSend()
+        funid = (- 1)
 
 def reqSend():
     _recieveData = _ser.readline().strip().decode('utf-8')
     global _recieveJsonData
     if (_recieveData != ''):
         _recieveJsonData = json.loads(_recieveData)
-    val = _recieveJsonData['args0']
+    else:
+        _recieveJsonData = ''
+    if (_recieveJsonData != ''):
+        val = _recieveJsonData['args0']
     val = ord(val)
     if (val == 48):
         pic_bin = takeAPhoto()
@@ -47,5 +49,4 @@ def takeAPhoto():
     r = urllib.request.urlopen('http://168.131.151.110:8080/stream/snapshot.jpeg')
     pic_bin = r.read()
     return pic_bin
-while True:
-    _firstCall = dispatch()
+_firstCall = dispatch()

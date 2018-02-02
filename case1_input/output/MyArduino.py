@@ -21,6 +21,7 @@ def readDoorSensor() -> None:
         jsonObject: JsonObject = jsonBuffer.createObject()
         jsonObject['args0'] = 0
         jsonObject.printTo(Serial)
+        jsonBuffer.clear()
         preState = postState
     if ((postState == LOW) and (preState == HIGH)):
         sendFunid: JsonObject = jsonBuffer.createObject()
@@ -29,4 +30,5 @@ def readDoorSensor() -> None:
         jsonObject: JsonObject = jsonBuffer.createObject()
         jsonObject['args0'] = 1
         jsonObject.printTo(Serial)
+        jsonBuffer.clear()
         preState = postState

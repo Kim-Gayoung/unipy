@@ -6,11 +6,8 @@ import sys
 
 def dispatch():
     funid = int(sys.argv[1])
-    if (funid == 3):
-        selectDoorlist()
     if (funid == 4):
         deleteDoorlist()
-    funid = (- 1)
 
 def selectDoorlist():
     conn = pymysql.connect(host='localhost', user='capstone', password='capstone17', db='capstone', charset='utf8')
@@ -57,5 +54,4 @@ def deleteDoorlist():
     except:
         conn.close()
         print(json.dumps({'result': False}))
-while True:
-    _firstCall = dispatch()
+_firstCall = dispatch()

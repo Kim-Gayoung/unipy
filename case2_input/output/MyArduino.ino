@@ -50,6 +50,8 @@ void servoControl() {
         data = tmp0;
     }
 
+    jsonBuffer.clear();
+
     if (data == "r") {
         pos = pos - 10;
         data = "";

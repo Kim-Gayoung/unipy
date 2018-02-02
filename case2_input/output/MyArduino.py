@@ -32,6 +32,7 @@ def servoControl() -> None:
         recieveJson: JsonObject = jsonBuffer.parseObject(recieveData)
         tmp0: String = recieveJson['args0']
         data = tmp0
+    jsonBuffer.clear()
     if (data == 'r'):
         pos = (pos - 10)
         data = ''

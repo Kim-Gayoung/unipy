@@ -7,7 +7,6 @@ def dispatch():
     funid = int(sys.argv[1])
     if (funid == 5):
         recordDoorState()
-    funid = (- 1)
 
 def recordDoorState():
     openclose = sys.argv[2]
@@ -35,5 +34,4 @@ def save_doorState(openclose, d_pic_loc):
     except:
         conn.close()
         return False
-while True:
-    _firstCall = dispatch()
+_firstCall = dispatch()
