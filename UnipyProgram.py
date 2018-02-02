@@ -215,19 +215,26 @@ class replaceAST(ast.NodeTransformer):
         loopFunction = ast.FunctionDef()
         loopFunction.body = []
         isExist = False
+        callFunction = []
         
         if classArr.get(self.className) == 'Arduino':
             for tup in remoteProcList:
                 if tup[0] == self.className and tup[1] != 'setup':
                     for callTup in calleeArr:
-                        if callTup[1] == self.className and callTup[0] != tup[1]:
-                            loopFunction.body.append(ast.Call(args = [], func = ast.Name(id=tup[1], ctx=ast.Load()), keywords = []))
+                        if callTup[1] != self.className and callTup[0] != tup[1]:
+                            if tup[1] not in callFunction:
+                                callFunction.append(tup[1])
+#                            loopFunction.body.append(ast.Expr(value = ast.Call(args = [], func = ast.Name(id=tup[1], ctx=ast.Load()), keywords = [])))
                         elif callTup[1] == self.className and callTup[0] == tup[1]:
                             isExist = True
                     
             if isExist == True:
                 loopFunction.body.append(ast.Expr(value = ast.Call(args=[], func = ast.Name(id='dispatch', ctx=ast.Load()), keywords=[])))
-            
+        
+        if callFunction != []:
+            for expr in callFunction:
+                loopFunction.body.append(ast.parse(expr + '()'))
+                
         if loopFunction.body == []:
             return []
         
