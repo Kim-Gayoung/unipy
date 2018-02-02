@@ -138,8 +138,7 @@ class replaceAST(ast.NodeTransformer):
         newNode = ast.ClassDef(bases = node.bases, body = newNode, decorator_list = node.decorator_list, name = node.name)
                
         if self.dispatch_flag == True and classArr.get(self.className) != 'Arduino':
-            source = "while True:\n" + "\t_firstCall = dispatch()\n"
-            newNode.body.body.append(ast.parse(source))
+            newNode.body.body.append(ast.parse('_firstCall = dispatch()'))
 #            dispatchValue = ast.Call(args = [], func = ast.Name(id='dispatch', ctx=ast.Load()), keywords = [])
 #            dispatchCall = ast.Assign(targets = [ast.Name(id='_firstCall', ctx = ast.Store())], value = dispatchValue)
 #            newNode.body.body.append(dispatchCall)
@@ -246,8 +245,9 @@ class replaceAST(ast.NodeTransformer):
         caller = ""
         callee = ""
         
+        
+        newIf = ast.If()
         for elem in calleeArr:
-            newIf = ast.If()
             if elem[1] == self.className:
                 callee = elem[1]
                 caller = elem[2]
@@ -257,16 +257,17 @@ class replaceAST(ast.NodeTransformer):
                         funNum = tup[2]
                         break
                 newIf.test = ast.Compare(left = ast.Name(id = "funid"), ops = [ast.Eq()], comparators = [ast.Num(n = funNum)])
-                newIf.body = ast.Expr(value = ast.Call(args = [], func = ast.Name(id=elem[0], ctx=ast.Load()), keywords = []))
+                newIf.body = [ast.Expr(value = ast.Call(args = [], func = ast.Name(id=elem[0], ctx=ast.Load()), keywords = []))]
                 newIf.orelse = []
                 newFunction.body.append(newIf)
         
         if newFunction.body == []:
             return []
         
-        commNode = self.getCommuNode(callee, caller)
+        commNode = self.getCommuNode(callee, caller, newIf)
         n = 0
         
+        newFunction.body.clear()
         for comm in commNode:
             newFunction.body.insert(n, comm)
             n = n + 1
@@ -277,14 +278,13 @@ class replaceAST(ast.NodeTransformer):
         else:
             newFunction.name = 'dispatch'
         
-        newFunction.body.append(ast.parse('funid = -1'))
         newFunction.args =[]
         newFunction.decorator_list = []
         self.dispatch_flag = True
         
         return newFunction
     
-    def getCommuNode(self, callee, caller):
+    def getCommuNode(self, callee, caller, ifNode):
         calleeClass = classArr.get(callee)
         callerClass = classArr.get(caller)
         comm = commuTable.get(callerClass).get(calleeClass)
@@ -303,79 +303,90 @@ class replaceAST(ast.NodeTransformer):
                 ifBodyAst.append(ast.AnnAssign(target = [ast.Name(id="jsonObject", ctx = ast.Load())], annotation = ast.Name(id = "JsonObject", ctx = ast.Load()), value = valueAst, simple = 1))
                 ifBodyAst.append(ast.parse("funid = jsonObject['_funid']"))
                 newCommu.append(ast.If(test = ast.Compare(comparators = [ast.Str(s = "")], left = ast.Name(id = "str", ctx = ast.Load()), ops = [ast.NotEq()]), body = ifBodyAst, orelse = []))
+                newCommu.append(ifNode)
+                newCommu.append(ast.parse('funid = -1'))
                 
                 return newCommu
             
             elif calleeClass == 'Raspberry':
                 newCommu.append(ast.parse('global _ser, _jsonData'))
-                trySource = 'try:\n' + '\tif _ser == None:\n'
-                trySource += '\t\traise NameError\n'
-                trySource += 'except NameError:\n' + '\t_ser = serial.Serial("/dev/ttyACM0", 9600)\n'
-                newCommu.append(ast.parse(trySource))
-                newCommu.append(ast.parse('jsonStr = _ser.readline().strip().decode("utf-8")'))
-                newCommu.append(ast.parse('_jsonData = json.loads(jsonStr)'))
-                newCommu.append(ast.parse('funid = _jsonData["_funid"]'))
+                newCommu.append(ast.parse('_ser = serial.Serial("/dev/ttyACM0", 9600)'))
+                whileBody = []
+                whileBody.append(ast.parse('jsonStr = _ser.readline().strip().decode("utf-8")'))
+                whileBody.append(ast.parse('if jsonStr == "":\n\tcontinue'))
+                whileBody.append(ast.parse('_jsonData = json.loads(jsonStr)'))
+                whileBody.append(ast.parse('funid = _jsonData["_funid"]'))
+                whileBody.append(ifNode)
+                whileBody.append(ast.parse('funid = -1'))
+                whileNode = ast.While(test = ast.Name(id = 'True', ctx = ast.Load()), body = whileBody, orelse = [])
+                newCommu.append(whileNode)
                 
                 return newCommu
                 
         elif comm == 'Socket':
             if calleeClass == 'Raspberry':
                 newCommu.append(ast.parse('global _conn'))
-                trySource = 'try:\n' + '\tif _conn == None:\n'
-                trySource += '\t\traise NameError\n'
-                trySource += 'except NameError:\n' + '\ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n'
-                trySource += '\ts.bind((HOST, PORT))\n' + '\ts.listen(10)\n'
-                trySource += '\t_conn, addr = s.accept()\n'
-                newCommu.append(ast.parse(trySource))
-#                newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
-#                newCommu.append(ast.parse('s.bind((HOST, PORT))'))
-#                newCommu.append(ast.parse('s.listen(10)'))
-                
-                newCommu.append(ast.parse('global _recieveJsonData'))
-                newCommu.append(ast.parse('_recieveData = ""'))
-                newCommu.append(ast.parse('_cnt = 0'))
+                newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
+                newCommu.append(ast.parse('s.bind((HOST, PORT))'))
+                newCommu.append(ast.parse('s.listen(1)'))
+                whileBody = []
+                whileBody.append(ast.parse('_conn, addr = s.accept()'))
+                whileBody.append(ast.parse('global _recieveJsonData'))
+                whileBody.append(ast.parse('_recieveData = ""'))
+                whileBody.append(ast.parse('_cnt = 0'))
                 
                 source = "while True:\n"
                 source += "\ttmp = _conn.recv(1).decode('utf-8')\n" + "\t_recieveData += tmp\n"
                 source += "\tif tmp == '{':\n" + "\t\t_cnt = _cnt + 1\n" + "\telif tmp == '}':\n" + "\t\t_cnt = _cnt - 1\n"
                 source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
-                newCommu.append(ast.parse(source))
+                whileBody.append(ast.parse(source))
                 
-                newCommu.append(ast.parse('if _recieveData != "":\n\t_recieveJsonData = json.loads(_recieveData)\n'))
-                newCommu.append(ast.parse('funid = _recieveJsonData["_funid"]'))
+                whileBody.append(ast.parse('if _recieveData == "":\n\tcontinue\n'))
+                whileBody.append(ast.parse('_recieveJsonData = json.loads(_recieveData)'))
+                whileBody.append(ast.parse('funid = _recieveJsonData["_funid"]'))
+                whileBody.append(ifNode)
+                whileBody.append(ast.parse('funid = -1'))
+                whileNode = ast.While(test = ast.Name(id='True', ctx = ast.Load()), body = whileBody, orelse = [])
+                newCommu.append(whileNode)
                 
                 return newCommu
             
             elif calleeClass == 'Mobile':
                 newCommu.append(ast.parse('global _conn'))
-                trySource = 'try:\n' + '\tif _conn == None:\n'
-                trySource += '\t\traise NameError\n'
-                trySource += 'except NameError:\n'
-                trySource += '\ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n'
-                trySource += '\ts.bind((HOST, PORT))\n' + '\ts.listen(10)\n'
-                trySource += '\t_conn, addr = s.accept()\n'
                 newCommu.append(ast.parse(trySource))
-#                newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
-#                newCommu.append(ast.parse('conn, addr = s.accept()'))
+                newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
+                newCommu.append(ast.parse('s.bind((HOST, PORT))'))
+                newCommu.append(ast.parse('s.listen(1)'))
+                
+                whileBody = []
+                whileBody.append(ast.parse('_conn, addr = s.accept()'))
                 
                 source = "while True:\n"
                 source += "\ttmp = _conn.recv(1).decode('utf-8')\n" + "\t_recieveData += tmp\n"
                 source += "\tif tmp == '{':\n" + "\t\t_cnt = _cnt + 1\n" + "\telif tmp == '}':\n" + "\t\t_cnt = _cnt - 1\n"
                 source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
-                newCommu.append(ast.parse(source))
+                whileBody.append(ast.parse(source))
+                whileBody.append(ifNode)
+                whileBody.append(ast.parse('funid = -1'))
+                
+                whileNode = ast.While(test = ast.Name(id = 'True', ctx = ast.Load()), body = whileBody, orelse = [])
+                newCommu.append(whileNode)
                 
                 return newCommu
     
         elif comm == 'http':                
             if calleeClass == 'Cloud':
                 newCommu.append(ast.parse('funid = int(sys.argv[1])'))
+                newCommu.append(ifNode)
                 
                 return newCommu
                 
             elif calleeClass == 'Mobile':
+                newCommu.append(ifNode)
                 return newCommu
             
         elif comm == 'Bluetooth':
+            newCommu.append(ifNode)
             return newCommu
         else:
             print ("Not Supported Communication way")
@@ -480,6 +491,7 @@ class CommLib():
             num  = num + 1
             
         newAsts.append(ast.parse('jsonObject.printTo(Serial)'))
+        newAsts.append(ast.parse('jsonBuffer.clear()'))
 
         return newAsts
 
@@ -514,6 +526,7 @@ class CommLib():
             num = num + 1
 
         newAsts.append(ast.parse(ifSource))
+        newAsts.append(ast.parse('jsonBuffer.clear()'))
 
         return newAsts
     
@@ -542,15 +555,19 @@ class CommLib():
         newAsts.append(ast.parse('_recieveData = _ser.readline().strip().decode("utf-8")'))
         newAsts.append(ast.parse('global _recieveJsonData'))
         
-        newAsts.append(ast.parse('if _recieveData != "":\n\t_recieveJsonData = json.loads(_recieveData)\n'))
+        ifSource = 'if _recieveData != "":\n' + '\t_recieveJsonData = json.loads(_recieveData)\n'
+        ifSource += 'else:\n' + '\t_recieveJsonData = ""\n'
+        newAsts.append(ast.parse(ifSource))
         
         num = 0
-        
+        ifSource = 'if _recieveJsonData != "":\n'
         for arg in node.args.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse(sarg + ' = _recieveJsonData["args' + str(num) + '"]'))
+            ifSource += '\t' + sarg + ' = _recieveJsonData["args' + str(num) + '"]\n'
             num = num + 1
-
+            
+        newAsts.append(ast.parse(ifSource))
+        
         return newAsts
     
     def sendBySerialAtRaspberry(node, methval):
@@ -652,15 +669,21 @@ class CommLib():
         source += "\tif tmp == '{':\n" + "\t\t_cnt = _cnt + 1\n" + "\telif tmp == '}':\n" + "\t\t_cnt = _cnt - 1\n"
         source += "\tif _cnt == 0:\n" + "\t\tbreak\n"
         newAsts.append(ast.parse(source))
+        newAsts.append(ast.parse('global _jsonData'))
         
-        newAsts.append(ast.parse('if _recieveData != "":\n\t_jsonData = json.loads(_recieveData)\n'))
+        ifSource = 'if _recieveData != "":\n' + '\t_jsonData = json.loads(_recieveData)\n'
+        ifSource += 'else:\n' + '\t_jsonData = ""\n'
+        newAsts.append(ast.parse(ifSource))
             
         num = 0
         
+        ifSource = 'if _jsonData != "":\n'
         for arg in node.args.args:
             sarg = CommLib.unparseExpr(arg)
-            newAsts.append(ast.parse(sarg + ' = _jsonData["args' + str(num) + '"]'))
+            ifSource += '\t' + sarg + ' = _jsonData["args' + str(num) + '"]\n'
             num = num + 1
+        
+        newAsts.append(ast.parse(ifSource))
         
         return newAsts
         
