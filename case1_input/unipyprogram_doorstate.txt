@@ -7,9 +7,6 @@ class MyArduino(Arduino):
 		Serial.begin(9600)
 		pinMode(doorPin, INPUT)
 
-	def loop() -> None:
-		readDoorSensor()
-
 	def readDoorSensor() -> None:
 		postState = digitalRead(doorPin)
 
