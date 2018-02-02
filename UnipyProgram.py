@@ -215,18 +215,33 @@ class replaceAST(ast.NodeTransformer):
         loopFunction = ast.FunctionDef()
         loopFunction.body = []
         isExist = False
-        callFunction = []
+        callFunction = []       # 루프 내에서 호출되어야 하는 함수 목록
         
         if classArr.get(self.className) == 'Arduino':
-            for tup in remoteProcList:
-                if tup[0] == self.className and tup[1] != 'setup':
-                    for callTup in calleeArr:
-                        if callTup[1] != self.className and callTup[0] != tup[1]:
+            for tup in remoteProcList:      # 모든 위치에 있는 함수들 목록
+                if classArr.get(tup[0]) == 'Arduino': 
+                    if tup[1] == 'setup':
+                        pass
+                    else:
+                        for callTup in calleeArr:       # 어디서 어디에 있는 함수를 호출하는지
+                            if callTup[1] == self.className and callTup[0] == tup[1]:   # dispatch에 들어가는 함수
+                                isExist = True
+                                break
+                            elif callTup[1] == self.className:
+                                pass
+                            elif callTup[0] == tup[1]:
+                                pass
+                            
+                        else:
                             if tup[1] not in callFunction:
                                 callFunction.append(tup[1])
-#                            loopFunction.body.append(ast.Expr(value = ast.Call(args = [], func = ast.Name(id=tup[1], ctx=ast.Load()), keywords = [])))
-                        elif callTup[1] == self.className and callTup[0] == tup[1]:
-                            isExist = True
+#                            
+#                            if callTup[1] != self.className or callTup[0] != tup[1]:
+#                                if tup[1] not in callFunction:
+#                                    callFunction.append(tup[1])
+#    #                            loopFunction.body.append(ast.Expr(value = ast.Call(args = [], func = ast.Name(id=tup[1], ctx=ast.Load()), keywords = [])))
+#                            elif callTup[1] == self.className and callTup[0] == tup[1]:
+#                                isExist = True
                     
             if isExist == True:
                 loopFunction.body.append(ast.Expr(value = ast.Call(args=[], func = ast.Name(id='dispatch', ctx=ast.Load()), keywords=[])))
@@ -360,7 +375,6 @@ class replaceAST(ast.NodeTransformer):
             
             elif calleeClass == 'Mobile':
                 newCommu.append(ast.parse('global _conn'))
-                newCommu.append(ast.parse(trySource))
                 newCommu.append(ast.parse('s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)'))
                 newCommu.append(ast.parse('s.bind((HOST, PORT))'))
                 newCommu.append(ast.parse('s.listen(1)'))
