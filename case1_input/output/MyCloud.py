@@ -5,7 +5,7 @@ import sys
 
 def dispatch():
     funid = int(sys.argv[1])
-    if (funid == 5):
+    if (funid == 4):
         recordDoorState()
 
 def recordDoorState():

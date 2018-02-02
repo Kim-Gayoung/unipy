@@ -20,7 +20,7 @@ void readDoorSensor() {
 
     if (postState == HIGH && preState == LOW) {
         JsonObject& sendFunid = jsonBuffer.createObject();
-        sendFunid["_funid"] = 3;
+        sendFunid["_funid"] = 2;
         sendFunid.printTo(Serial);
         JsonObject& jsonObject = jsonBuffer.createObject();
         jsonObject["args0"] = 0;
@@ -31,7 +31,7 @@ void readDoorSensor() {
 
     if (postState == LOW && preState == HIGH) {
         JsonObject& sendFunid = jsonBuffer.createObject();
-        sendFunid["_funid"] = 3;
+        sendFunid["_funid"] = 2;
         sendFunid.printTo(Serial);
         JsonObject& jsonObject = jsonBuffer.createObject();
         jsonObject["args0"] = 1;

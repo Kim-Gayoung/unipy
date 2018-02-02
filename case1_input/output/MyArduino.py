@@ -16,7 +16,7 @@ def readDoorSensor() -> None:
     postState = digitalRead(doorPin)
     if ((postState == HIGH) and (preState == LOW)):
         sendFunid: JsonObject = jsonBuffer.createObject()
-        sendFunid['_funid'] = 3
+        sendFunid['_funid'] = 2
         sendFunid.printTo(Serial)
         jsonObject: JsonObject = jsonBuffer.createObject()
         jsonObject['args0'] = 0
@@ -25,7 +25,7 @@ def readDoorSensor() -> None:
         preState = postState
     if ((postState == LOW) and (preState == HIGH)):
         sendFunid: JsonObject = jsonBuffer.createObject()
-        sendFunid['_funid'] = 3
+        sendFunid['_funid'] = 2
         sendFunid.printTo(Serial)
         jsonObject: JsonObject = jsonBuffer.createObject()
         jsonObject['args0'] = 1

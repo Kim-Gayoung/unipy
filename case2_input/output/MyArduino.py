@@ -12,6 +12,7 @@ def setup() -> None:
 
 def loop() -> None:
     dispatch()
+    servoControl()
 
 def dispatch() -> None:
     str: String = ''

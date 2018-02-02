@@ -16,6 +16,8 @@ void setup() {
 
 void loop() {
     dispatch();
+
+    servoControl();
 }
 
 void dispatch() {

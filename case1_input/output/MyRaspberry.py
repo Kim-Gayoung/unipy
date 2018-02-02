@@ -14,7 +14,7 @@ def dispatch():
             continue
         _jsonData = json.loads(jsonStr)
         funid = _jsonData['_funid']
-        if (funid == 3):
+        if (funid == 2):
             reqSend()
         funid = (- 1)
 
@@ -31,7 +31,7 @@ def reqSend():
     if (val == 48):
         pic_bin = takeAPhoto()
         _field_dict = {}
-        _field_dict['_funid'] = 5
+        _field_dict['_funid'] = 4
         _field_dict['args0'] = c
         _field_dict['args1'] = pic_bin
         req = urllib3.PoolManager()
@@ -39,7 +39,7 @@ def reqSend():
     if (val == 49):
         pic_bin = takeAPhoto()
         _field_dict = {}
-        _field_dict['_funid'] = 5
+        _field_dict['_funid'] = 4
         _field_dict['args0'] = o
         _field_dict['args1'] = pic_bin
         req = urllib3.PoolManager()
