@@ -218,30 +218,25 @@ class replaceAST(ast.NodeTransformer):
         callFunction = []       # 루프 내에서 호출되어야 하는 함수 목록
         
         if classArr.get(self.className) == 'Arduino':
-            for tup in remoteProcList:      # 모든 위치에 있는 함수들 목록
-                if classArr.get(tup[0]) == 'Arduino': 
-                    if tup[1] == 'setup':
+            for locProc in allLocProcList:      # 모든 위치에 있는 함수들 목록
+                if classArr.get(locProc[0]) == 'Arduino': 
+                    if locProc[1] == 'setup':
                         pass
                     else:
                         for callTup in calleeArr:       # 어디서 어디에 있는 함수를 호출하는지
-                            if callTup[1] == self.className and callTup[0] == tup[1]:   # dispatch에 들어가는 함수
+                            if callTup[1] == self.className and callTup[0] == locProc[1]:
+                                # dispatch에 들어가는 함수이기 때문에 loop에 선언될 필요가 없음
                                 isExist = True
                                 break
                             elif callTup[1] == self.className:
                                 pass
-                            elif callTup[0] == tup[1]:
-                                pass
-                            
+                            elif callTup[0] == locProc[1]:
+                                pass                            
                         else:
-                            if tup[1] not in callFunction:
-                                callFunction.append(tup[1])
-#                            
-#                            if callTup[1] != self.className or callTup[0] != tup[1]:
-#                                if tup[1] not in callFunction:
-#                                    callFunction.append(tup[1])
-#    #                            loopFunction.body.append(ast.Expr(value = ast.Call(args = [], func = ast.Name(id=tup[1], ctx=ast.Load()), keywords = [])))
-#                            elif callTup[1] == self.className and callTup[0] == tup[1]:
-#                                isExist = True
+                            if locProc[1] in localFunc:
+                                pass
+                            elif locProc[1] not in callFunction:
+                                callFunction.append(locProc[1])
                     
             if isExist == True:
                 loopFunction.body.append(ast.Expr(value = ast.Call(args=[], func = ast.Name(id='dispatch', ctx=ast.Load()), keywords=[])))
@@ -274,7 +269,7 @@ class replaceAST(ast.NodeTransformer):
                 callee = elem[1]
                 caller = elem[2]
                 funNum = -1
-                for tup in remoteProcList:
+                for tup in allLocProcList:
                     if tup[0] == self.className and tup[1] == elem[0]:
                         funNum = tup[2]
                         break
@@ -425,7 +420,7 @@ class CommLib():
         
         methval = ast.Num(n = -1)
         
-        for remoteTup in remoteProcList:
+        for remoteTup in allLocProcList:
             if remoteTup[0] == toClz and remoteTup[1] == meth:
                 methval = ast.Num(n = remoteTup[2])
                 break
@@ -433,24 +428,24 @@ class CommLib():
         if locFromClz == 'Arduino' and locToClz == 'Raspberry':
             newNodes = CommLib.sendBySerialAtArduino(node, methval)
                                       
-        elif locFromClz == 'Raspberry' and locToClz == 'Arduino':
+        if locFromClz == 'Raspberry' and locToClz == 'Arduino':
             newNodes = CommLib.sendBySerialAtRaspberry(node, methval)
             
-        elif locFromClz == 'Raspberry' and locToClz == 'Cloud':
+        if locFromClz == 'Raspberry' and locToClz == 'Cloud':
             newNodes = CommLib.sendByHttpAtRaspberry(node, methval, targets)
         
-        elif locFromClz == 'Raspberry' and locToClz == 'Mobile':
+        if locFromClz == 'Raspberry' and locToClz == 'Mobile':
             newNodes = CommLib.sendBySocketAtRaspberry(node, methval, targets)
         
-        elif locFromClz == 'Mobile' and locToClz == 'Cloud':
+        if locFromClz == 'Mobile' and locToClz == 'Cloud':
             newNodes = CommLib.sendByHttpAtMobile(node, methval, targets)
         
-        elif locFromClz == 'Mobile' and locToClz == 'Raspberry':
+        if locFromClz == 'Mobile' and locToClz == 'Raspberry':
             newNodes = CommLib.sendBySocketAtMobile(node, methval)
         
-        else:
-            print ("Invalid location")
-            return [node]
+#        else:
+#            print ("Invalid location")
+#            return [node]
         
         return newNodes
     
@@ -466,24 +461,23 @@ class CommLib():
         if locFromClz == 'Arduino' and locToClz == 'Raspberry':
             newArgs = CommLib.recieveBySerialAtRaspberry(node)
         
-        elif locFromClz == 'Raspberry' and locToClz == 'Arduino':
+        if locFromClz == 'Raspberry' and locToClz == 'Arduino':
             newArgs = CommLib.recieveBySerialAtArduino(node)
         
-        elif locFromClz == 'Raspberry' and locToClz == 'Cloud':
+        if locFromClz == 'Raspberry' and locToClz == 'Cloud':
             newArgs = CommLib.recieveByHttpAtCloud(node)
         
-        elif locFromClz == 'Raspberry' and locToClz == 'Mobile':
+        if locFromClz == 'Raspberry' and locToClz == 'Mobile':
             newArgs = CommLib.recieveBySocketAtMobile(node)
         
-        elif locFromClz == 'Mobile' and locToClz == 'Cloud':
+        if locFromClz == 'Mobile' and locToClz == 'Cloud':
             newArgs = CommLib.recieveByHttpAtCloud(node)
         
-        elif locFromClz == 'Mobile' and locToClz == 'Raspberry':
+        if locFromClz == 'Mobile' and locToClz == 'Raspberry':
             newArgs = CommLib.recieveBySocketAtRaspberry(node)
-        
-        else:
-            print ("Invalid location")
-            return [node]
+#        else:
+#            print ("Invalid location")
+#            return [node]
             
         return newArgs
     
@@ -859,10 +853,10 @@ class TableGenVisitor(ast.NodeVisitor):
         self.num = 0
         global classArr
         global methodArr
-        global remoteProcList
+        global allLocProcList
         classArr = {}
         methodArr = {}
-        remoteProcList = []
+        allLocProcList = []
         
         
     def generic_visit(self, node):
@@ -877,20 +871,9 @@ class TableGenVisitor(ast.NodeVisitor):
         # class 별 method list로 구성
         if type(node).__name__ == 'FunctionDef':
             name = node.name
-            if name.__contains__('_'):
-                name = node.name.split('_')
-                if name.__contains__(''):
-                    name.remove('')
-                sname = ""
-                for n in name[1:]:
-                    sname += n                
-                methodArr[sname] = self.className
-                remoteProcList.append((self.className, sname, self.num))
-                self.num = self.num + 1
-            else:
-                methodArr[node.name] = self.className
-                remoteProcList.append((self.className, node.name, self.num))
-                self.num = self.num + 1
+            methodArr[node.name] = self.className
+            allLocProcList.append((self.className, node.name, self.num))
+            self.num = self.num + 1
             
         ast.NodeVisitor.generic_visit(self, node)
         
@@ -899,19 +882,44 @@ class FindCalleeCaller(ast.NodeVisitor):
         self.className = ""
         global calleeArr
         calleeArr = []
+        global localFunc
+        localFunc = []
+        
+    def visit_Module(self, node):
+        self.generic_visit(node)
+        global localFunc
+        
+        tmp = []
+        for funcName in localFunc:
+            tmp.append(funcName)
+            
+        for funcName in localFunc:
+            for locProc in allLocProcList:
+                if classArr.get(locProc[0]) == 'Arduino':
+                    if locProc[1] == funcName:
+                        break
+            else:
+                del tmp[tmp.index(funcName)]
+                
+        localFunc.clear()
+        localFunc = tmp
         
     def visit_ClassDef(self, node):
         self.className = node.name
         
         self.generic_visit(node)
-        
+                
     def visit_Call(self, node):
         if type(node.func).__name__ == 'Attribute':
             callee = methodArr.get(node.func.attr)
             
             if callee is not None and not(calleeArr.__contains__((node.func.attr, callee, self.className))):
-                calleeArr.append((node.func.attr, callee, self.className))
-#            else:;
+                calleeArr.append((node.func.attr, callee, self.className))                
+        elif type(node.func).__name__ == 'Name':
+            if classArr.get(self.className) == 'Arduino':
+                localFunc.append(node.func.id)
+            
+#            else:
 #                if type(node.func.value).__name__ == 'Name':
 #                    cmd_last = "help('" + node.func.value.id + "')"
 #                    stream = subprocess.check_output(["python", "-c", cmd_last], universal_newlines = True)

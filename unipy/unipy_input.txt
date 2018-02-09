@@ -1,0 +1,236 @@
+class MyMobile(Mobile):
+	_import_list = ['json']
+	_url = "http://168.131.152.196/common.php"
+	doorJson = []
+	HOST = '168.131.151.110'
+	PORT = 8888
+	
+	def showDoorlist():
+		global doorJson
+		doorJson = MyCloud.selectDoorlist(_url)
+		
+		print (doorJson)
+			
+		for door in doorJson:
+			print (door)
+	
+	def deleteDoorInfo():
+		num = 0
+		
+		for door in doorJson:
+			print (str(num) + " : " + str(door))
+			num += 1
+			
+		selectDel = input("select number : ")
+		deleteInfo = doorJson[int(selectDel)].get('d_time')
+		
+		isSuccess = MyCloud.deleteDoorlist(_url, deleteInfo)
+		
+		if isSuccess["result"] == True:
+			print ("Successfully Deleted")
+		else:
+			print ("Failed to Delete")
+		
+	def sendControlMessage(data):
+		MyRaspberry.sendMessage((HOST, PORT), data)
+		
+	def main():
+		while True:
+			print ("=====[1] doorlist, [2] control camera=====")
+			select = input("Select Command: ")
+			
+			if select == '1':
+				print ("=====[1] Show doorlist, [2] Delete doorlist=====")		
+				m_select = input("Select Command : ")
+			
+				if m_select == '1':
+					showDoorlist()
+				elif m_select == '2':
+					deleteDoorInfo()
+				else:
+					break
+			elif select == '2':
+				print ("=====[1] Take Photo, [2] Start/Stop Streaming, [3] Turn Left(Camera), [4] Turn Right(Camera)=====")
+				m_select = input("Select Command : ")
+				
+				if m_select == '1':
+					# take photo(custom) & save photo in cloud
+					pass
+				elif m_select == '2':
+					# streaming
+					pass
+				elif m_select == '3':
+					# turn left
+					sendControlMessage('l')
+				elif m_select == '4':
+					# turn right
+					sendControlMessage('r')
+				else:
+					break
+				
+class MyCloud(Cloud):
+	_import_list = ['pymysql', 'os', 'json']
+	
+	def selectDoorlist():
+		conn = pymysql.connect(host='localhost', user='capstone', password='capstone17', db='capstone', charset='utf8')
+		result = []
+		
+		try:
+			with conn.cursor() as cursor:
+				sql = "select d_time, d_openclose from doorlist order by d_time"
+				cursor.execute(sql)
+				
+				rows = cursor.fetchall()
+				columns = [desc[0] for desc in cursor.description]
+				tmp = []
+				
+				for row in rows:
+					if type(row[0]).__name__ == 'datetime':
+						tmp.append([str(row[0]), row[1]])
+						
+				rows = tmp
+				del(tmp)
+				
+				for row in rows:
+					row = dict(zip(columns, row))
+					result.append(row)
+		
+			conn.close()
+			print (json.dumps(result))
+		except:
+			conn.close()
+			print ()
+		
+	def deleteDoorlist(deleteInfo):
+		conn = pymysql.connect(host='localhost', user='capstone', password='capstone17', db='capstone', charset='utf8')
+		
+		try:
+			with conn.cursor() as cursor:
+				sql = "select d_pic_loc from doorlist where d_time = %s"
+				cursor.execute(sql, deleteInfo)
+				row = cursor.fetchone()
+				pic_loc = "D:\APM\Apache24\htdocs\sechome\door\\" + row[0]
+			
+			with open(pic_loc, 'r') as f:
+				f.close()
+				os.unlink(pic_loc)
+				
+			with conn.cursor() as cursor:
+				sql = "delete from doorlist where d_time = %s"
+				cursor.execute(sql, deleteInfo)
+				conn.commit()
+				
+			conn.close()
+			print (json.dumps({'result': True}))
+		except:
+			conn.close()
+			print (json.dumps({'result': False}))
+			
+	def recordDoorState(openclose, pic_bin):
+		d_pic_loc = save_picture(pic_bin)
+
+		isSuccess = save_doorState(openclose, d_pic_loc)
+
+	def save_picture(pic_bin):
+		num = 1
+		pic_loc = "D:\APM\Apache24\htdocs\sechome\door\door" + str(num) + ".jpg"
+
+		while os.path.isfile(pic_loc):
+			num = num + 1
+			pic_loc = "D:\APM\Apache24\htdocs\sechome\door\door" + str(num) + ".jpg"
+
+		return pic_loc
+
+	def save_doorState(openclose, d_pic_loc):
+		conn = pymysql.connect(host='localhost', user='capstone', password='capstone17', db='capstone', charset='utf8')
+
+		try:
+			with conn.cursor() as cursor:
+				sql = "insert into doorlist(d_openclose, d_pic_loc) values(%s, %s)"
+				cursor.execute(sql, (openclose, d_pic_loc))
+				conn.commit()
+			conn.close()
+			return True
+		except:
+			conn.close()
+			return False
+
+class MyRaspberry(Raspberry):
+	
+	HOST = ''
+	PORT = 8888
+	_import_list = ['urllib.request']
+	_url = "http://168.131.152.196/common.php"
+
+	def sendMessage(data):
+		MyArduino.servoControl(data)
+
+	def reqSend(val):
+		val = ord(val)
+		if val == 48:	# '0'
+			pic_bin = takeAPhoto()
+			MyCloud.recordDoorState(_url, 'c', pic_bin)
+		if val == 49:	# '1'
+			pic_bin = takeAPhoto()
+			MyCloud.recordDoorState(_url, 'o', pic_bin)
+
+	def takeAPhoto():
+		# 가상으로 찍은 jpeg를 가져옴
+		# file read나 command를 실행하는 action을 Raspberry에 구현
+		r = urllib.request.urlopen("http://168.131.151.110:8080/stream/snapshot.jpeg")
+		# command에서 wget을 통해 image를 받아오는 방식
+		# mjpeg에서 사용하고 있는 stream/snapshot.jpeg 파일을 읽는 방식
+		pic_bin = r.read()
+
+		return pic_bin	
+			
+class MyArduino(Arduino):
+	_include = 'Servo.h'
+	_sensor_decl = _Servo_outerServo
+  
+	outerPin: int = 10
+	pos: int = 110
+	doorPin: int = 2
+	preState: int = LOW
+	postState: int = LOW
+  
+	def setup() -> None:
+		Serial.begin(9600)
+		outerServo.attach(outerPin)
+		pinMode(doorPin, INPUT)
+	
+	def readDoorSensor() -> None:
+		postState = digitalRead(doorPin)
+
+		if postState == HIGH and preState == LOW:
+			MyRaspberry.reqSend("0")
+			preState = postState
+
+		if postState == LOW and preState == HIGH:
+			MyRaspberry.reqSend("1")
+			preState = postState
+
+		locallyCalledFun()
+			
+	def servoControl(data: String) -> None:
+		if data == 'r': # turn right
+			pos = pos - 10
+			data = ''
+		
+			if pos < 0:
+				pos = 0
+				
+		elif data == 'l': # turn left
+			pos = pos + 10
+			data = ''
+			
+			if pos > 180:
+				pos = 180
+		
+		else:
+			pass
+			
+		outerServo.write(pos)
+
+	def locallyCalledFun() -> None:
+		pass
