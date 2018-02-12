@@ -458,23 +458,42 @@ class CommLib():
 #            print ("commRecvLib : Exception")
             return []
         
+        returnNewArgs = []
+    
         if locFromClz == 'Arduino' and locToClz == 'Raspberry':
             newArgs = CommLib.recieveBySerialAtRaspberry(node)
+            
+            for stmt in newArgs:
+                returnNewArgs.append(stmt)
         
         if locFromClz == 'Raspberry' and locToClz == 'Arduino':
             newArgs = CommLib.recieveBySerialAtArduino(node)
+            
+            for stmt in newArgs:
+                returnNewArgs.append(stmt)
         
         if locFromClz == 'Raspberry' and locToClz == 'Cloud':
             newArgs = CommLib.recieveByHttpAtCloud(node)
+            
+            for stmt in newArgs:
+                returnNewArgs.append(stmt)
         
         if locFromClz == 'Raspberry' and locToClz == 'Mobile':
             newArgs = CommLib.recieveBySocketAtMobile(node)
+            
+            for stmt in newArgs:
+                returnNewArgs.append(stmt)
         
         if locFromClz == 'Mobile' and locToClz == 'Cloud':
             newArgs = CommLib.recieveByHttpAtCloud(node)
         
+            for stmt in newArgs:
+                returnNewArgs.append(stmt)
         if locFromClz == 'Mobile' and locToClz == 'Raspberry':
             newArgs = CommLib.recieveBySocketAtRaspberry(node)
+            
+            for stmt in newArgs:
+                returnNewArgs.append(stmt)
 #        else:
 #            print ("Invalid location")
 #            return [node]
