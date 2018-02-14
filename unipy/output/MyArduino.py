@@ -1,4 +1,5 @@
 
+import threading
 _include = 'ArduinoJson.h'
 _include = 'Servo.h'
 _sensor_decl = _Servo_outerServo
@@ -18,7 +19,7 @@ def loop() -> None:
     dispatch()
     readDoorSensor()
 
-def dispatch() -> None:
+def dispatch_Serial() -> None:
     str: String = ''
     funid: int = 0
     if (Serial.available() > 0):

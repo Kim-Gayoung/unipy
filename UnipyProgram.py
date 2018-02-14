@@ -78,7 +78,7 @@ class replaceAST(ast.NodeTransformer):
     def visit_ClassDef(self, node):
         self.className = node.name
         self.dispatch_flag = False
-        newFunction = self.getDispatch()
+        newFunctionList = self.getDispatch()
         newNode = self.generic_visit(node)
         
         newBody = self.visit_body(node.body)
@@ -123,10 +123,15 @@ class replaceAST(ast.NodeTransformer):
                 if classArr.get(self.className) == 'Arduino':
                     num = num + 1
                     if stmt.name == 'loop':
-                        newNode.body.insert(num, newFunction)
+                        for newFunction in newFunctionList:
+                            newNode.body.insert(num, newFunction)
+                            num = num + 1
                         break
+                        
                 else:
-                    newNode.body.insert(num, newFunction)
+                    for newFunction in newFunctionList:
+                        newNode.body.insert(num, newFunction)
+                        num = num + 1
                     break
             else:
                 num = num + 1
@@ -136,9 +141,22 @@ class replaceAST(ast.NodeTransformer):
 
         replaceAST.importList = []
         newNode = ast.ClassDef(bases = node.bases, body = newNode, decorator_list = node.decorator_list, name = node.name)
-               
+        
+        
         if self.dispatch_flag == True and classArr.get(self.className) != 'Arduino':
-            newNode.body.body.append(ast.parse('_firstCall = dispatch()'))
+            if len(newFunctionList) > 1:
+                if 'threding' not in self.importList:
+                    self.importList.append('threading')
+                    num = 0
+                    for newFunction in newFunctionList:
+                        newNode.body.body.append(ast.parse("thread"+ str(num) + " = threading.Thread(target = " + newFunction.name + ", args = ())"))
+                        num = num + 1
+                    
+                    for n in range(0, num):
+                        newNode.body.body.append(ast.parse("thread" + str(n) + ".start()"))
+            else:
+                for newFunction in newFunctionList:
+                    newNode.body.body.append(ast.parse(newFunction.name + "()"))
 #            dispatchValue = ast.Call(args = [], func = ast.Name(id='dispatch', ctx=ast.Load()), keywords = [])
 #            dispatchCall = ast.Assign(targets = [ast.Name(id='_firstCall', ctx = ast.Store())], value = dispatchValue)
 #            newNode.body.body.append(dispatchCall)
@@ -257,13 +275,14 @@ class replaceAST(ast.NodeTransformer):
             
     
     def getDispatch(self):
-        newFunction = ast.FunctionDef()
-        newFunction.body = []
         caller = ""
         callee = ""
+        commNodeList = []
+        commProtocolList = []
         
-        
+        newIfList = []
         newIf = ast.If()
+        newIf.body = []
         for elem in calleeArr:
             if elem[1] == self.className:
                 callee = elem[1]
@@ -274,32 +293,43 @@ class replaceAST(ast.NodeTransformer):
                         funNum = tup[2]
                         break
                 newIf.test = ast.Compare(left = ast.Name(id = "funid"), ops = [ast.Eq()], comparators = [ast.Num(n = funNum)])
-                newIf.body = [ast.Expr(value = ast.Call(args = [], func = ast.Name(id=elem[0], ctx=ast.Load()), keywords = []))]
+                newIf.body.append(ast.Expr(value = ast.Call(args = [], func = ast.Name(id=elem[0], ctx=ast.Load()), keywords = [])))
                 newIf.orelse = []
-                newFunction.body.append(newIf)
+                
+                commProtocol = commuTable.get(classArr.get(caller)).get(classArr.get(callee))
+                if commProtocol not in commProtocolList:
+                    commNodeList.append(self.getCommuNode(callee, caller, newIf))
+                    commProtocolList.append(commProtocol)
         
-        if newFunction.body == []:
+        if newIf.body == []:
             return []
         
-        commNode = self.getCommuNode(callee, caller, newIf)
         n = 0
         
-        newFunction.body.clear()
-        for comm in commNode:
-            newFunction.body.insert(n, comm)
-            n = n + 1
+        newFunctionList = []
         
-        if classArr.get(self.className) == 'Arduino':
-            newFunction.name = 'dispatch'
-            newFunction.returns = ast.NameConstant(value = None)
-        else:
-            newFunction.name = 'dispatch'
+        for commNode in commNodeList:
+            newFunction = ast.FunctionDef()
+            newFunction.body = []
+            commProtocolIndex = commNodeList.index(commNode)
+            
+            for comm in commNode:
+                newFunction.body.insert(n, comm)
+                n = n + 1
         
-        newFunction.args =[]
-        newFunction.decorator_list = []
-        self.dispatch_flag = True
+            if classArr.get(self.className) == 'Arduino':
+                newFunction.name = 'dispatch_' + commProtocolList[commProtocolIndex]
+                newFunction.returns = ast.NameConstant(value = None)
+            else:
+                newFunction.name = 'dispatch_' + commProtocolList[commProtocolIndex]
+            
+            newFunction.args =[]
+            newFunction.decorator_list = []
+            self.dispatch_flag = True
+            
+            newFunctionList.append(newFunction)
         
-        return newFunction
+        return newFunctionList
     
     def getCommuNode(self, callee, caller, ifNode):
         calleeClass = classArr.get(callee)
@@ -937,17 +967,8 @@ class FindCalleeCaller(ast.NodeVisitor):
         elif type(node.func).__name__ == 'Name':
             if classArr.get(self.className) == 'Arduino':
                 localFunc.append(node.func.id)
-            
-#            else:
-#                if type(node.func.value).__name__ == 'Name':
-#                    cmd_last = "help('" + node.func.value.id + "')"
-#                    stream = subprocess.check_output(["python", "-c", cmd_last], universal_newlines = True)
-#                    isModule = stream.__contains__("Help on module ") or stream.__contains__("Help on package ")
-#                    if isModule and not(importArr.__contains__(node.func.value.id)):
-#                        importArr.append(node.func.value.id)
-                
 
-print ("1: case1(doorstate), 2: case2(control), 3: case3(dbcontent), 4: the other case")
+print ("1: case1(doorstate), 2: case2(control), 3: case3(dbcontent), 4: total_case, 5: the other case")
 selection = input("Enter the number : ")
 
 firstCase = "case1_input/unipyprogram_doorstate.txt"
@@ -956,6 +977,8 @@ secondCase = "case2_input/unipyprogram_control.txt"
 secondOutput = "case2_input/output"
 thirdCase = "case3_input/unipyprogram_dbcontent.txt"
 thirdOutput = "case3_input/output"
+fourthCase = "unipy/unipy_input.txt"
+fourthOutput = "unipy/output"
 
 fullPath = ""
 fileName = ""
@@ -972,6 +995,9 @@ elif selection == '3':
     fullPath = thirdCase
     fileName = thirdOutput
 elif selection == '4':
+    fullPath = fourthCase
+    fileName = fourthOutput
+elif selection == '5':
     directory = input("Enter the working directory : ")
     filename = input("Enter the filename : ")
     fullPath = directory + "/" + filename

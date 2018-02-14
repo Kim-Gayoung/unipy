@@ -8,7 +8,35 @@ HOST = ''
 PORT = 8888
 _url = 'http://168.131.152.196/common.php'
 
-def dispatch():
+def dispatch_Socket():
+    global _conn
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((HOST, PORT))
+    s.listen(1)
+    while True:
+        (_conn, addr) = s.accept()
+        global _recieveJsonData
+        _recieveData = ''
+        _cnt = 0
+        while True:
+            tmp = _conn.recv(1).decode('utf-8')
+            _recieveData += tmp
+            if (tmp == '{'):
+                _cnt = (_cnt + 1)
+            elif (tmp == '}'):
+                _cnt = (_cnt - 1)
+            if (_cnt == 0):
+                break
+        if (_recieveData == ''):
+            continue
+        _recieveJsonData = json.loads(_recieveData)
+        funid = _recieveJsonData['_funid']
+        if (funid == 10):
+            sendMessage()
+            reqSend()
+        funid = (- 1)
+
+def dispatch_Serial():
     global _ser, _jsonData
     _ser = serial.Serial('/dev/ttyACM0', 9600)
     while True:
@@ -18,6 +46,7 @@ def dispatch():
         _jsonData = json.loads(jsonStr)
         funid = _jsonData['_funid']
         if (funid == 10):
+            sendMessage()
             reqSend()
         funid = (- 1)
 
@@ -85,4 +114,7 @@ def takeAPhoto():
     r = urllib.request.urlopen('http://168.131.151.110:8080/stream/snapshot.jpeg')
     pic_bin = r.read()
     return pic_bin
-_firstCall = dispatch()
+thread0 = threading.Thread(target=dispatch_Socket, args=())
+thread1 = threading.Thread(target=dispatch_Serial, args=())
+thread0.start()
+thread1.start()
