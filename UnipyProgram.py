@@ -145,8 +145,8 @@ class replaceAST(ast.NodeTransformer):
         
         if self.dispatch_flag == True and classArr.get(self.className) != 'Arduino':
             if len(newFunctionList) > 1:
-                if 'threding' not in self.importList:
-                    self.importList.append('threading')
+                if 'threding' not in replaceAST.importList:
+                    replaceAST.importList.append('threading')
                     num = 0
                     for newFunction in newFunctionList:
                         newNode.body.body.append(ast.parse("thread"+ str(num) + " = threading.Thread(target = " + newFunction.name + ", args = ())"))
@@ -161,7 +161,7 @@ class replaceAST(ast.NodeTransformer):
 #            dispatchCall = ast.Assign(targets = [ast.Name(id='_firstCall', ctx = ast.Store())], value = dispatchValue)
 #            newNode.body.body.append(dispatchCall)
         
-        return newNode        
+        return newNode
     
     def visit_While(self, node):
         newNode = self.generic_visit(node)
@@ -283,23 +283,26 @@ class replaceAST(ast.NodeTransformer):
         newIfList = []
         newIf = ast.If()
         newIf.body = []
+        
         for elem in calleeArr:
             if elem[1] == self.className:
                 callee = elem[1]
                 caller = elem[2]
                 funNum = -1
-                for tup in allLocProcList:
-                    if tup[0] == self.className and tup[1] == elem[0]:
-                        funNum = tup[2]
-                        break
-                newIf.test = ast.Compare(left = ast.Name(id = "funid"), ops = [ast.Eq()], comparators = [ast.Num(n = funNum)])
-                newIf.body.append(ast.Expr(value = ast.Call(args = [], func = ast.Name(id=elem[0], ctx=ast.Load()), keywords = [])))
-                newIf.orelse = []
+                for locProcTup in allLocProcList:
+                    if locProcTup[0] == self.className and locProcTup[1] == elem[0]:
+                        funNum = locProcTup[2]
+                        newIf.test = ast.Compare(left = ast.Name(id = "funid"), ops = [ast.Eq()], comparators = [ast.Num(n = funNum)])
+                        newIf.body.append(ast.Expr(value = ast.Call(args = [], func = ast.Name(id=elem[0], ctx=ast.Load()), keywords = [])))
+                        newIf.orelse = []
+                        newIfList.append(newIf)
                 
                 commProtocol = commuTable.get(classArr.get(caller)).get(classArr.get(callee))
                 if commProtocol not in commProtocolList:
-                    commNodeList.append(self.getCommuNode(callee, caller, newIf))
+                    commNodeList.append(self.getCommuNode(callee, caller, newIfList))
                     commProtocolList.append(commProtocol)
+                    
+            newIfList = []
         
         if newIf.body == []:
             return []
