@@ -4,6 +4,7 @@ import urllib3
 import serial
 import json
 import socket
+import threading
 HOST = ''
 PORT = 8888
 _url = 'http://168.131.152.196/common.php'
@@ -31,8 +32,9 @@ def dispatch_Socket():
             continue
         _recieveJsonData = json.loads(_recieveData)
         funid = _recieveJsonData['_funid']
-        if (funid == 10):
+        if (funid == 9):
             sendMessage()
+        if (funid == 10):
             reqSend()
         funid = (- 1)
 
@@ -45,8 +47,9 @@ def dispatch_Serial():
             continue
         _jsonData = json.loads(jsonStr)
         funid = _jsonData['_funid']
-        if (funid == 10):
+        if (funid == 9):
             sendMessage()
+        if (funid == 10):
             reqSend()
         funid = (- 1)
 
@@ -118,3 +121,5 @@ thread0 = threading.Thread(target=dispatch_Socket, args=())
 thread1 = threading.Thread(target=dispatch_Serial, args=())
 thread0.start()
 thread1.start()
+thread0.join()
+thread1.join()

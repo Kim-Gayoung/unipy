@@ -6,9 +6,11 @@ import sys
 
 def dispatch_http():
     funid = int(sys.argv[1])
-    if (funid == 6):
+    if (funid == 4):
         selectDoorlist()
+    if (funid == 5):
         deleteDoorlist()
+    if (funid == 6):
         recordDoorState()
 
 def selectDoorlist():

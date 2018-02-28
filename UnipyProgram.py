@@ -145,15 +145,16 @@ class replaceAST(ast.NodeTransformer):
         
         if self.dispatch_flag == True and classArr.get(self.className) != 'Arduino':
             if len(newFunctionList) > 1:
-                if 'threding' not in replaceAST.importList:
-                    replaceAST.importList.append('threading')
-                    num = 0
-                    for newFunction in newFunctionList:
-                        newNode.body.body.append(ast.parse("thread"+ str(num) + " = threading.Thread(target = " + newFunction.name + ", args = ())"))
-                        num = num + 1
+                num = 0
+                for newFunction in newFunctionList:
+                    newNode.body.body.append(ast.parse("thread"+ str(num) + " = threading.Thread(target = " + newFunction.name + ", args = ())"))
+                    num = num + 1
                     
-                    for n in range(0, num):
-                        newNode.body.body.append(ast.parse("thread" + str(n) + ".start()"))
+                for n in range(0, num):
+                    newNode.body.body.append(ast.parse("thread" + str(n) + ".start()"))
+                
+                for n in range(0, num):
+                    newNode.body.body.append(ast.parse("thread" + str(n) + ".join()"))
             else:
                 for newFunction in newFunctionList:
                     newNode.body.body.append(ast.parse(newFunction.name + "()"))
@@ -277,34 +278,48 @@ class replaceAST(ast.NodeTransformer):
     def getDispatch(self):
         caller = ""
         callee = ""
+        
         commNodeList = []
         commProtocolList = []
         
+        currentCommFuncDict = {}
+        
         newIfList = []
-        newIf = ast.If()
-        newIf.body = []
+        hasIfStmt = False
         
         for elem in calleeArr:
             if elem[1] == self.className:
-                callee = elem[1]
-                caller = elem[2]
-                funNum = -1
-                for locProcTup in allLocProcList:
-                    if locProcTup[0] == self.className and locProcTup[1] == elem[0]:
-                        funNum = locProcTup[2]
-                        newIf.test = ast.Compare(left = ast.Name(id = "funid"), ops = [ast.Eq()], comparators = [ast.Num(n = funNum)])
-                        newIf.body.append(ast.Expr(value = ast.Call(args = [], func = ast.Name(id=elem[0], ctx=ast.Load()), keywords = [])))
-                        newIf.orelse = []
-                        newIfList.append(newIf)
+                if currentCommFuncDict == {}:
+                    callee = elem[1]
+                    caller = elem[2]
+                    currentCommFuncDict[caller] = [elem[0]]
+                else:
+                    if elem[1] == callee and elem[2] == caller:
+                        currentCommFuncDict.get(caller).append(elem[0])
+                    else:
+                        caller = elem[2]
+                        if caller in currentCommFuncDict.keys():
+                            currentCommFuncDict.get(caller).append(elem[0])
+                        else:
+                            currentCommFuncDict[caller] = [elem[0]]
+        print (self.className, len(currentCommFuncDict))
+        for currentCaller in currentCommFuncDict.keys():
+            funNum = -1
+            for locProcTup in allLocProcList:
+                if locProcTup[0] == self.className and locProcTup[1] in currentCommFuncDict.get(currentCaller):
+                    hasIfStmt = True
+                    funNum = locProcTup[2]
+                    ifSource = "if funid == " + str(funNum) + ":\n"
+                    ifSource += "\t" + locProcTup[1] + "()\n"
+                    newIfList.append(ast.parse(ifSource))
                 
-                commProtocol = commuTable.get(classArr.get(caller)).get(classArr.get(callee))
-                if commProtocol not in commProtocolList:
-                    commNodeList.append(self.getCommuNode(callee, caller, newIfList))
-                    commProtocolList.append(commProtocol)
+            commProtocol = commuTable.get(classArr.get(currentCaller)).get(classArr.get(self.className))
+            if commProtocol not in commProtocolList:
+                commNodeList.append(self.getCommuNode(self.className, currentCaller, newIfList))
+                commProtocolList.append(commProtocol)
+                
                     
-            newIfList = []
-        
-        if newIf.body == []:
+        if hasIfStmt == False:
             return []
         
         n = 0
@@ -332,6 +347,10 @@ class replaceAST(ast.NodeTransformer):
             
             newFunctionList.append(newFunction)
         
+        if len(newFunctionList) > 1:
+            if "threading" not in replaceAST.importList:
+                replaceAST.importList.append("threading")
+        
         return newFunctionList
     
     def getCommuNode(self, callee, caller, ifNode):
@@ -349,7 +368,6 @@ class replaceAST(ast.NodeTransformer):
                 newCommu.append(ast.parse(bodySource))
                 ifBodyAst = []
                 valueAst = ast.Call(args = [ast.Name(id = "str", ctx = ast.Load())], func = ast.Attribute(attr = "parseObject", ctx = ast.Load(), value = ast.Name(id = "jsonBuffer", ctx = ast.Load())), keywords = [], kwargs = None, starargs = None)
-#                ifBodyAst.append(ast.Assign(targets = [ast.Name(id="JsonObject&_jsonObject", ctx = ast.Load())], value = valueAst))
                 ifBodyAst.append(ast.AnnAssign(target = [ast.Name(id="jsonObject", ctx = ast.Load())], annotation = ast.Name(id = "JsonObject", ctx = ast.Load()), value = valueAst, simple = 1))
                 ifBodyAst.append(ast.parse("funid = jsonObject['_funid']"))
                 newCommu.append(ast.If(test = ast.Compare(comparators = [ast.Str(s = "")], left = ast.Name(id = "str", ctx = ast.Load()), ops = [ast.NotEq()]), body = ifBodyAst, orelse = []))
@@ -448,7 +466,6 @@ class CommLib():
             locToClz = classArr[toClz]
             locFromClz = classArr[fromClz]
         except:
-            #print ("commSendLib : Exception")
             return [node]
         
         methval = ast.Num(n = -1)

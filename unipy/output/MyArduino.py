@@ -1,5 +1,4 @@
 
-import threading
 _include = 'ArduinoJson.h'
 _include = 'Servo.h'
 _sensor_decl = _Servo_outerServo
