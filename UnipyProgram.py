@@ -49,6 +49,7 @@ class replaceAST(ast.NodeTransformer):
     
     def __init__(self):
         self.className = ""
+        self.dispatchName = []
 
     def visit_FunctionDef(self, node):
         for callee in calleeArr:
@@ -258,7 +259,8 @@ class replaceAST(ast.NodeTransformer):
                                 callFunction.append(locProc[1])
                     
             if isExist == True:
-                loopFunction.body.append(ast.Expr(value = ast.Call(args=[], func = ast.Name(id='dispatch', ctx=ast.Load()), keywords=[])))
+                for name in self.dispatchName:
+                    loopFunction.body.append(ast.parse(name + "()"))
         
         if callFunction != []:
             for expr in callFunction:
@@ -302,7 +304,22 @@ class replaceAST(ast.NodeTransformer):
                             currentCommFuncDict.get(caller).append(elem[0])
                         else:
                             currentCommFuncDict[caller] = [elem[0]]
-        print (self.className, len(currentCommFuncDict))
+        
+        currentCommFuncKeys = list(currentCommFuncDict.keys())
+        
+        # 같은 통신 방법을 사용하는 클래스를 묶기 위한 과정
+        for f_index in range(0, len(currentCommFuncDict.keys()) - 1):
+            f_commu = commuTable.get(classArr.get(currentCommFuncKeys[f_index])).get(classArr.get(self.className))
+            for s_index in range(f_index + 1, len(currentCommFuncDict.keys())):
+                s_commu = commuTable.get(classArr.get(currentCommFuncKeys[s_index])).get(classArr.get(self.className))
+                # 현재 클래스와 첫번째 클래스, 두번째 클래스가 사용하는 통신 방법이 같은 경우
+                if f_commu == s_commu:
+                    if currentCommFuncKeys[s_index] not in currentCommFuncDict.get(currentCommFuncKeys[f_index]):
+                        sFuncList = currentCommFuncDict.get(currentCommFuncKeys[s_index])
+                        for func in sFuncList:
+                            currentCommFuncDict.get(currentCommFuncKeys[f_index]).append(func)
+                        del currentCommFuncDict[currentCommFuncKeys[s_index]]
+            
         for currentCaller in currentCommFuncDict.keys():
             funNum = -1
             for locProcTup in allLocProcList:
@@ -317,6 +334,8 @@ class replaceAST(ast.NodeTransformer):
             if commProtocol not in commProtocolList:
                 commNodeList.append(self.getCommuNode(self.className, currentCaller, newIfList))
                 commProtocolList.append(commProtocol)
+            
+            newIfList = []
                 
                     
         if hasIfStmt == False:
@@ -338,6 +357,7 @@ class replaceAST(ast.NodeTransformer):
             if classArr.get(self.className) == 'Arduino':
                 newFunction.name = 'dispatch_' + commProtocolList[commProtocolIndex]
                 newFunction.returns = ast.NameConstant(value = None)
+                self.dispatchName.append('dispatch_' + commProtocolList[commProtocolIndex])
             else:
                 newFunction.name = 'dispatch_' + commProtocolList[commProtocolIndex]
             
