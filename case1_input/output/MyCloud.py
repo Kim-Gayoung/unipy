@@ -3,7 +3,7 @@ import pymysql
 import os
 import sys
 
-def dispatch():
+def dispatch_http():
     funid = int(sys.argv[1])
     if (funid == 4):
         recordDoorState()
@@ -34,4 +34,4 @@ def save_doorState(openclose, d_pic_loc):
     except:
         conn.close()
         return False
-_firstCall = dispatch()
+dispatch_http()

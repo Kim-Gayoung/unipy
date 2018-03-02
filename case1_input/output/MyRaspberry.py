@@ -5,7 +5,7 @@ import json
 import serial
 _url = 'http://168.131.152.196/common.php'
 
-def dispatch():
+def dispatch_Serial():
     global _ser, _jsonData
     _ser = serial.Serial('/dev/ttyACM0', 9600)
     while True:
@@ -49,4 +49,4 @@ def takeAPhoto():
     r = urllib.request.urlopen('http://168.131.151.110:8080/stream/snapshot.jpeg')
     pic_bin = r.read()
     return pic_bin
-_firstCall = dispatch()
+dispatch_Serial()

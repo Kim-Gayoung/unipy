@@ -34,8 +34,6 @@ def dispatch_Socket():
         funid = _recieveJsonData['_funid']
         if (funid == 9):
             sendMessage()
-        if (funid == 10):
-            reqSend()
         funid = (- 1)
 
 def dispatch_Serial():
@@ -47,8 +45,6 @@ def dispatch_Serial():
             continue
         _jsonData = json.loads(jsonStr)
         funid = _jsonData['_funid']
-        if (funid == 9):
-            sendMessage()
         if (funid == 10):
             reqSend()
         funid = (- 1)

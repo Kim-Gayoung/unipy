@@ -15,12 +15,10 @@ void setup() {
 }
 
 void loop() {
-    dispatch();
-
-    servoControl();
+    dispatch_Serial();
 }
 
-void dispatch() {
+void dispatch_Serial() {
     String str = "";
 
     int funid = 0;

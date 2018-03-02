@@ -4,8 +4,10 @@ import os
 import pymysql
 import sys
 
-def dispatch():
+def dispatch_http():
     funid = int(sys.argv[1])
+    if (funid == 3):
+        selectDoorlist()
     if (funid == 4):
         deleteDoorlist()
 
@@ -54,4 +56,4 @@ def deleteDoorlist():
     except:
         conn.close()
         print(json.dumps({'result': False}))
-_firstCall = dispatch()
+dispatch_http()

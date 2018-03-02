@@ -11,10 +11,9 @@ def setup() -> None:
     outerServo.attach(outerPin)
 
 def loop() -> None:
-    dispatch()
-    servoControl()
+    dispatch_Serial()
 
-def dispatch() -> None:
+def dispatch_Serial() -> None:
     str: String = ''
     funid: int = 0
     if (Serial.available() > 0):

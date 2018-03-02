@@ -20,12 +20,12 @@ void setup() {
 }
 
 void loop() {
-    dispatch();
+    dispatch_Serial();
 
     readDoorSensor();
 }
 
-void dispatch() {
+void dispatch_Serial() {
     String str = "";
 
     int funid = 0;

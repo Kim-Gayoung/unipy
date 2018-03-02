@@ -15,7 +15,7 @@ def setup() -> None:
     pinMode(doorPin, INPUT)
 
 def loop() -> None:
-    dispatch()
+    dispatch_Serial()
     readDoorSensor()
 
 def dispatch_Serial() -> None:

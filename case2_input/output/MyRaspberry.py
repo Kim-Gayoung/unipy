@@ -5,7 +5,7 @@ import socket
 HOST = ''
 PORT = 8888
 
-def dispatch():
+def dispatch_Socket():
     global _conn
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
@@ -64,4 +64,4 @@ def sendMessage():
     ser.write(_jsonData.encode('utf-8'))
     ser.write('\n'.encode('utf-8'))
     ser.close()
-_firstCall = dispatch()
+dispatch_Socket()
