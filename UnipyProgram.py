@@ -1008,7 +1008,7 @@ class FindCalleeCaller(ast.NodeVisitor):
             if classArr.get(self.className) == 'Arduino':
                 localFunc.append(node.func.id)
 
-print ("1: case1(doorstate), 2: case2(control), 3: case3(dbcontent), 4: total_case, 5: the other case")
+print ("1: door state, 2: control, 3: DB content, 4: total case, 5: custom case")
 selection = input("Enter the number : ")
 
 firstCase = "case1_input/unipyprogram_doorstate.txt"
@@ -1042,6 +1042,8 @@ elif selection == '5':
     filename = input("Enter the filename : ")
     fullPath = directory + "/" + filename
     fileName = directory + "/output"
+else:
+    sys.exit(1)
 
 # 파이썬의 파일을 읽어와서 문자열로 변환
 f = open(fullPath, 'r+')
