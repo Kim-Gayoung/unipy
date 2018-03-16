@@ -10,11 +10,11 @@
   	Enter the number : _
   
 
-  1번은 문이 열리고 닫히는 것을 DB에 저장하는 케이스
-  2번은 카메라가 달려있는 서보모터를 회전시키는 케이스
-  3번은 DB에 저장된 문의 여닫힘 정보를 확인하는 케이스
-  4번은 1번부터 3번까지를 합친 케이스
-  5번은 사용자가 작성한 케이스를 실행할 수 있는 선택사항이다.
+  > 1번은 문이 열리고 닫히는 것을 DB에 저장하는 케이스
+  > 2번은 카메라가 달려있는 서보모터를 회전시키는 케이스
+  > 3번은 DB에 저장된 문의 여닫힘 정보를 확인하는 케이스
+  > 4번은 1번부터 3번까지를 합친 케이스
+  > 5번은 사용자가 작성한 케이스를 실행할 수 있는 선택사항이다.
 
 
    
@@ -86,6 +86,15 @@
 
 
 ### 2-3. Cloud
+- Python 3.6 설치
+	https://www.python.org/downloads/windows/ 에서 Lastest Python 3 Release - Python 3.6.4를 클릭한다.
+	다운로드 받은 인스톨러를 관리자 권한으로 실행한다.
+
+	하단의 체크박스를 모두 체크하고 `Install Now`를 클릭
+	> Install launcher for all users(recommended) : 체크 시 모든 사용자가 파이썬 사용 가능, 체크 해제 시 파이썬 실행시 관리자 권한 필요
+	> Add Python 3.6 to PATH : 체크 시 PATH에 자동으로 파이썬 설치 경로를 추가해줌, 체크 해제 시 PATH에 사용자가 파이썬 설치 경로를 추가해야함
+
+
 - PHP7 설치
 	http://windows.php.net/download/ 에서 자신의 사양에 맞는 php 압축파일 다운로드(Php 7 사용)
 	다운로드 된 압축파일(zip) 해제
@@ -133,7 +142,13 @@
 
 
 - DB 스키마 정보
-		
+	MySQL에 테이블을 추가한다. 다음과 같은 쿼리문을 이용하면 된다.
+
+	<pre><code>
+	CREATE TABLE doorlist(d_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				d_openclose VARCHAR(10) NOT NULL,
+				d_pic_loc VARCHAR(200) NOT NULL,
+				PRIMARY KEY(t_time));</code></pre>
 		
 - PHP Program
 	다운로드한 unipy의 execPython.php 파일을 아파치의 htdocs로 이동
@@ -144,7 +159,7 @@
 
 
 ### 2-4. Mobile/Desktop
-   
+python을 실행할 수 있는 환경 구축(2-3의 python 설치 참고)
 
 ## 3. Compilation and Deployment each device program
 ### 3-1. Arduino
@@ -160,7 +175,25 @@ PC에서 MyMobile.py를 실행한 후, 첫 시작이 되는 함수인 main() 호
 
    
 ### 3-4. Cloud
-2-3의 PHP Program에 따라 실행이 필요한 python 파일을 MyCloud.py 경로로 변경 및 저장
+2-3의 PHP Program에 따라 실행이 필요한 python 파일을 MyCloud.py의 경로로 변경 및 저장
    
 
 ## 4. How to run Mobile/Desktop Program
+사용자의 입력을 통해 반복 실행할 수 있는 코드를 작성해야 하며, 다음과 같이 작성할 수 있다.
+<pre><code>
+def selectCommand():
+  while True:
+	  print ("[1]: show door state, [2]: delete door state")
+	  select = input("Select Command :")
+
+	  if select == '1':
+		  showDoorList()
+	  elif select == '2':
+		  deleteDoorList()
+	
+.
+.
+.
+
+selectCommand()
+</code></pre>
