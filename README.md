@@ -145,8 +145,8 @@
 	MySQL에 테이블을 추가한다. 다음과 같은 쿼리문을 이용하면 된다.<br>
 	```
 	CREATE TABLE doorlist(d_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    					  d_openclose VARCHAR(10) NOT NULL,
-    					  d_pic_loc VARCHAR(200) NOT NULL,
+    			  d_openclose VARCHAR(10) NOT NULL,
+    			  d_pic_loc VARCHAR(200) NOT NULL,
                           PRIMARY KEY(t_time));
 	```
 - PHP Program
