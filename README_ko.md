@@ -62,8 +62,9 @@
 		`curl http://www.linux-projects.org/listing/uv4l_repo/lrkey.asc | sudo apt-key add -` 명령어를 실행한 후에
 			
 		`/etc/apt/sources.list` 파일에 아래 내용을 추가한다<br>
-		deb http://www.linux-projects.org/listing/uv4l_repo/raspbian/ jessie main
+		`deb http://www.linux-projects.org/listing/uv4l_repo/raspbian/ jessie main`
 
+		파일의 변경된 내용을 저장한 후 다음과 같은 명령어를 실행한다.<br>
 		```
         sudo apt-get update
 		sudo apt-get install uv4l uv4l_raspicam
