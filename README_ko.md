@@ -136,7 +136,7 @@
 		  
 	설치 후 제어판 -> 관리도구 -> 서비스 에서 mysql 서비스 시작<br>
 		  
-	php와 연동을 위해 php의 php.ini 파일 수정(;로 주석처리 -> ; 제거)<br>
+	php와 mysql의 연동을 위해 php의 php.ini 파일 수정(;로 주석처리 -> ; 제거)<br>
 	`extension = php_mysqli.dll`
 
 	저장 후 제어판 -> 관리도구 -> 서비스 에서 apache 재실행
@@ -146,15 +146,16 @@
 	MySQL에 테이블을 추가한다. 다음과 같은 쿼리문을 이용하면 된다.<br>
 	```
 	CREATE TABLE doorlist(d_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    			d_openclose VARCHAR(10) NOT NULL,
-    			d_pic_loc VARCHAR(200) NOT NULL,
-                          PRIMARY KEY(t_time));
+    		  d_openclose VARCHAR(10) NOT NULL,
+    		  d_pic_loc VARCHAR(200) NOT NULL,
+                          PRIMARY KEY(d_time));
 	```
 - PHP Program
 	다운로드한 unipy의 execPython.php 파일을 아파치의 htdocs로 이동
-		  
-	<pre><code>$pyfile = "실행할 파이썬 파일 경로";
-	$pyexec = "파이썬 실행파일 경로";</code></pre>
+	```	  
+	$pyfile = "실행할 파이썬 파일 경로";
+	$pyexec = "파이썬 실행파일 경로";
+	```
 
 
 ### 2-4. Mobile/Desktop
