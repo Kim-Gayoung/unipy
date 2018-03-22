@@ -414,7 +414,7 @@ class PrettyPrinter2Arduino(ast.NodeVisitor):
         return self.s_code
             
        
-print ("1:case1(doorstate), 2:case2(control), 3:total case, the other number : the other arduino file")
+print ("1: door state, 2: control, 3: total case, 4: custom case")
 selection = input("Enter the number : ")
 
 firstCase = "case1_input/output/MyArduino.py"
@@ -437,9 +437,11 @@ elif selection == '2':
 elif selection == '3':
     fileName = thirdCase
     outputFile = thirdOutput
-else:
+elif selection == '4':
     fileName = input("Enter the Arduino input file name(Absolutely Path) : ")
     outputFile = input("Enter the Arduino output file name(Absolutely Path) : ")
+else:
+    sys.exit(1)
 
 f = open(fileName, 'r+')
 content = f.read()
