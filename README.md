@@ -17,6 +17,22 @@
   > <p style="height:10px;">The fourth case is the sum of case from 1 to 3.</p>
   > <p style="height:20px;">The final case is the option to run the case you wrote.</p>
 
+  If you write the program contains Arduino Programming, you need to change the Python Program to Arduino Program.<br>
+  Unipy provide 'Unipy_PrettyPrinter.py' to change the Python Program to Arduino Program.<br>
+  ```
+  C:\ > python Unipy_PrettyPrinter.py
+  1: door state, 2: control, 3: total case, 4: custom case
+  Enter the number : _
+  ```
+
+  You can execute it and choose case.<br>
+  > <p style="height:10px;">The first case is transforming the Python Program that is the door open/close state to Arduino Program.</p>
+  > <p style="height:10px;">The second case is transforming the Python Program that is to control servo motor to Arduino Program.</p>
+  > <p style="height:10px;">The third case is transforming the Python Program that is the sum of case 1 and 2 to Arduino Program.</p>
+  > <p style="height:20px;">The final case is transforming the Python Program that is the output file written by user through Unipy to Arduino Program.</p>
+
+  **When you execute custom case, you should enter the path of the input file and output file.**
+
 
 ## 2. Setting up Each Device
 ### 2-1. Arduino
@@ -174,4 +190,20 @@ After Executing 'MyMobile.py' file on your PC, you need to call the main() funct
 You need to modify and save the 'execPython.php' in htdocs directory according to the '2-3. PHP Program' section.
 
 ## 4. How to run Mobile/Desktop Program
-You should write repeately executable program through users input
+You should write repeately executable program through users input.
+```
+def selectCommand():
+  while True:
+    print ("[1]: show door state, [2]: delete door state")
+    select = input("Select Command: ")
+
+    if select == '1':
+      showDoorList()
+    elif select == '2':
+      deleteDoorList()
+
+.
+.
+.
+selectCommand()
+```
