@@ -11,41 +11,26 @@
   Enter the number : _
   ```
 
-> <p style="height:20px;">1번은 문이 열리고 닫히는 것을 DB에 저장하는 케이스</p>
-> <p style="height:20px;">2번은 카메라가 달려있는 서보모터를 회전시키는 케이스</p>
-> <p style="height:20px;">3번은 DB에 저장된 문의 여닫힘 정보를 확인하는 케이스</p>
-> <p style="height:20px;">4번은 1번부터 3번까지를 합친 케이스</p>
-> <p style="height:20px;">5번은 사용자가 작성한 케이스를 실행할 수 있는 선택사항이다.</p>
+> <p style="height:20px">1번은 문이 열리고 닫히는 것을 DB에 저장하는 케이스</p>
+> <p style="height:20px">2번은 카메라가 달려있는 서보모터를 회전시키는 케이스</p>
+> <p style="height:20px">3번은 DB에 저장된 문의 여닫힘 정보를 확인하는 케이스</p>
+> <p style="height:20px">4번은 1번부터 3번까지를 합친 케이스</p>
+> <p style="height:20px">5번은 사용자가 작성한 케이스를 실행할 수 있는 선택사항이다.</p>
 
-
-  아두이노 프로그래밍이 포함된 경우, Unipy_PrettyPrinter를 이용하여 .ino 파일로 출력이 가능하다.<br>
-  ```
-  C:\ > python Unipy_PrettyPrinter.py
-  1: door state, 2: control, 3: total case, 4: custom case
-  Enter the number : _
-  ```
-
-  위와 동일하게 실행할 수 있으며, 케이스 또한 선택할 수 있다.
-> <p style="height:20px;">1번은 문이 열리고 닫히는 것에 대한 파이썬 프로그램을 아두이노 프로그램으로 출력하는 케이스</p>
-> <p style="height:20px;">2번은 서보모터를 제어하는 것에 대한 파이썬 프로그램을 아두이노 프로그램을 출력하는 케이스</p>
-> <p style="height:20px;">3번은 1번과 2번 케이스를 합친 파이썬 프로그램을 아두이노 프로그램으로 출력하는 케이스</p>
-> <p style="height:20px;">4번은 사용자가 작성한 케이스를 실행하여 출력된 파이썬 프로그램을 아두이노 프로그램으로 출력해주는 케이스이다.</p>
-
-**사용자 작성 케이스를 실행할 때는 input 파일의 위치, ouput 파일의 위치를 지정해 주어야 한다.**
 
    
 ## 2. 각 디바이스 설정
 ### 2-1. Arduino
-- Arduino 보드<br>
+- Arduino Board<br>
   Arduino Uno
 
 
-- Arduino 부품<br>
+- Arduino Parts<br>
   마그네틱 도어 센서(MC-38)<br>
   마이크로 서보 모터(SG-90)
 
 
-- Arduino 부품 연결
+- Arduino Parts Wiring
 	* 마그네틱 도어 센서 연결<br>
 		마그네틱 도어 센서의 선 중 하나를 아두이노 디지털 핀 2번에 연결한다.<br>
 		다른 선은 아두이노 GND에 연결한다.
@@ -56,7 +41,7 @@
 
    
 ### 2-2. Raspberry Pi
-- Raspberry Pi 보드<br>
+- Raspberry Pi Board<br>
 	Raspberry Pi 3 Model B
 		  
 - Raspberry Pi OS version<br>
@@ -95,13 +80,12 @@
 	Python 3.6
 		
 
-- 파이썬에서 사용된 라이브러리<br>
+- Libraries used in Python<br>
   > urllib3(1.9.1)<br>
   > pyserial(2.6)
 
   pip 명령어를 이용하여 위와 같은 라이브러리를 설치할 수 있다.<br>
-  `pip install urllib3`<br>
-  `pip install pyserial`<br>
+  `pip install _`
 
 
 ### 2-3. Cloud
@@ -166,7 +150,7 @@
     		  d_pic_loc VARCHAR(200) NOT NULL,
                           PRIMARY KEY(d_time));
 	```
-- 파이썬을 실행하기 위한 PHP 프로그램
+- PHP Program
 	다운로드한 unipy의 execPython.php 파일을 아파치의 htdocs로 이동
 	```	  
 	$pyfile = "실행할 파이썬 파일 경로";
@@ -177,7 +161,7 @@
 ### 2-4. Mobile/Desktop
 python을 실행할 수 있는 환경 구축(2-3의 python 설치 참고)
 
-## 3. 각 장치를 컴파일/실행하는 방법
+## 3. Compilation and Deployment each device program
 ### 3-1. Arduino
 Arduino IDE에 MyArduino.ino를 복사해서 컴파일 및 업로드
 
@@ -194,7 +178,7 @@ PC에서 MyMobile.py를 실행한 후, 첫 시작이 되는 함수인 main() 호
 2-3의 PHP Program에 따라 실행이 필요한 python 파일을 MyCloud.py의 경로로 변경 및 저장
    
 
-## 4. Mobile/Desktop 프로그램 실행 방법
+## 4. How to run Mobile/Desktop Program
 사용자의 입력을 통해 반복 실행할 수 있는 코드를 작성해야 하며, 다음과 같이 작성할 수 있다.
 ```
 def selectCommand():
